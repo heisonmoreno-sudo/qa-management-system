@@ -18,8 +18,16 @@
  *        - soloCandidatosRegresion: boolean
  * @returns {Object} Lista de casos
  */
-function listarCasosReal(sheetUrl, filtros) {
-
+function listarCasos(sheetUrl, filtros) {
+  // LOGS INICIALES PARA DEBUG
+  Logger.log('════════════════════════════════════');
+  Logger.log('🔵 listarCasos EJECUTÁNDOSE');
+  Logger.log('🔵 URL recibida: ' + sheetUrl);
+  Logger.log('🔵 Tipo de sheetUrl: ' + typeof sheetUrl);
+  Logger.log('🔵 Filtros: ' + JSON.stringify(filtros));
+  Logger.log('════════════════════════════════════');
+  
+  // VALIDACIÓN CRÍTICA PRIMERO
   if (!sheetUrl || sheetUrl === '' || sheetUrl === null || sheetUrl === undefined) {
     Logger.log('❌ CRITICAL: sheetUrl es inválida');
     return {
@@ -28,20 +36,11 @@ function listarCasosReal(sheetUrl, filtros) {
       error: 'sheetUrl is null, undefined or empty'
     };
   }
+  
   try {
-    // AGREGAR: Log de entrada para debug
     Logger.log('=== INICIO listarCasos ===');
     Logger.log('URL recibida: ' + sheetUrl);
     Logger.log('Filtros recibidos: ' + JSON.stringify(filtros));
-    
-    // VALIDACIÓN: Verificar que sheetUrl no sea null o undefined
-    if (!sheetUrl || sheetUrl === '') {
-      Logger.log('ERROR: sheetUrl está vacía o es null');
-      return {
-        success: false,
-        mensaje: 'URL del Sheet no proporcionada'
-      };
-    }
     
     // INTENTAR abrir el spreadsheet
     var spreadsheet;
@@ -253,7 +252,7 @@ function aplicarFiltrosCasos(casos, filtros) {
  * @param {Object} datosCaso - Objeto con datos del caso
  * @returns {Object} Resultado de la operación
  */
-function crearCasoReal(datosCaso) {
+function crearCaso(datosCaso) {
   try {
     Logger.log('Creando caso: ' + datosCaso.titulo);
     
@@ -420,7 +419,7 @@ function generarCasoURI(spreadsheetId, casoId) {
  * @param {string} sheetUrl - URL del Google Sheet
  * @returns {Object} Lista de hojas
  */
-function obtenerHojasDisponiblesReal(sheetUrl) {
+function obtenerHojasDisponibles(sheetUrl) {
   try {
     var spreadsheet = SpreadsheetApp.openByUrl(sheetUrl);
     var todasHojas = spreadsheet.getSheets();
@@ -592,7 +591,7 @@ function eliminarCaso(sheetUrl, casoId) {
  * @param {string} nombreHoja - Nombre de la nueva hoja
  * @returns {Object} Resultado de la operación
  */
-function crearNuevaHojaReal(sheetUrl, nombreHoja) {
+function crearNuevaHoja(sheetUrl, nombreHoja) {
   try {
     Logger.log('Creando nueva hoja: ' + nombreHoja);
     
