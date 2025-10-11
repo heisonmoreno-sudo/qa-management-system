@@ -420,7 +420,7 @@ function generarCasoURI(spreadsheetId, casoId) {
  * @param {string} sheetUrl - URL del Google Sheet
  * @returns {Object} Lista de hojas
  */
-function obtenerHojasDisponibles(sheetUrl) {
+function obtenerHojasDisponiblesReal(sheetUrl) {
   try {
     var spreadsheet = SpreadsheetApp.openByUrl(sheetUrl);
     var todasHojas = spreadsheet.getSheets();
