@@ -2,24 +2,21 @@
  * ═══════════════════════════════════════════════════════════════════════════
  * BACKEND_CODE.GS
  * Punto de entrada principal del sistema
+ * VERSIÓN CORREGIDA: Con funciones proxy para exponer servicios
  * ═══════════════════════════════════════════════════════════════════════════
  */
 
 /**
  * Función principal que se ejecuta cuando alguien abre la Web App
- * Esta es la puerta de entrada del sistema
  */
 function doGet(e) {
   try {
-    // Obtener el email del usuario actual
     var userEmail = Session.getActiveUser().getEmail();
     
-    // Si no se puede obtener el email, usar uno por defecto
     if (!userEmail || userEmail === '') {
       userEmail = 'usuario@qa.com';
     }
     
-    // Crear y devolver la interfaz HTML
     var template = HtmlService.createTemplateFromFile('Frontend_Index');
     template.userEmail = userEmail;
     
@@ -29,14 +26,13 @@ function doGet(e) {
       .addMetaTag('viewport', 'width=device-width, initial-scale=1');
       
   } catch (error) {
-    Logger.log('Error en doGet: ' + error.toString());
+    Logger.log('❌ Error en doGet: ' + error.toString());
     return mostrarError('Error al cargar la aplicación: ' + error.message);
   }
 }
 
 /**
- * Incluye archivos HTML parciales (para modularizar el frontend)
- * Uso: <?!= include('nombre_archivo'); ?> en HTML
+ * Incluye archivos HTML parciales
  */
 function include(filename) {
   return HtmlService.createHtmlOutputFromFile(filename).getContent();
@@ -56,7 +52,7 @@ function mostrarError(mensaje) {
 }
 
 // ===================================================================
-// FUNCIONES PÚBLICAS - Llamadas desde el frontend
+// FUNCIONES PÚBLICAS BÁSICAS
 // ===================================================================
 
 /**
@@ -69,96 +65,10 @@ function obtenerUsuario() {
       success: true
     };
   } catch (error) {
+    Logger.log('❌ Error en obtenerUsuario: ' + error.toString());
     return {
       success: false,
       error: error.message
-    };
-  }
-}
-
-/**
- * Verifica si un Google Sheet tiene la configuración de workspace
- */
-function verificarConfiguracionSheet(sheetUrl) {
-  try {
-    var sheet = SpreadsheetApp.openByUrl(sheetUrl);
-    var hojaConfig = sheet.getSheetByName('Config');
-    
-    // Verificar si existen las hojas necesarias
-    var hojaCasos = sheet.getSheetByName('Casos');
-    var tieneConfigCompleta = hojaConfig !== null && hojaCasos !== null;
-    
-    return {
-      success: true,
-      tieneConfig: tieneConfigCompleta,
-      nombreSheet: sheet.getName()
-    };
-  } catch (error) {
-    Logger.log('Error verificando sheet: ' + error.toString());
-    return {
-      success: false,
-      error: 'No se pudo acceder al Sheet. Verifica la URL y los permisos.'
-    };
-  }
-}
-
-/**
- * Lista todos los workspaces configurados
- * Busca en Drive todos los Sheets que tengan hoja de configuración
- */
-function listarWorkspaces() {
-  try {
-    var workspaces = [];
-    
-    // TODO: Implementar búsqueda de Sheets con configuración
-    // Por ahora devuelve array vacío para que no rompa
-    
-    return {
-      success: true,
-      workspaces: workspaces
-    };
-  } catch (error) {
-    Logger.log('Error en listarWorkspaces: ' + error.toString());
-    return {
-      success: false,
-      error: error.message
-    };
-  }
-}
-
-/**
- * Obtiene un mensaje aleatorio del tipo especificado
- * Para mostrar en spinners y notificaciones
- */
-function obtenerMensajeAleatorio(tipo) {
-  try {
-    var mensajes = {
-      'carga': [
-        'Preparando tu arsenal de testing...',
-        'Cargando casos de prueba...',
-        'Sincronizando con el servidor...',
-        'Configurando workspace...',
-        'Casi listo...'
-      ],
-      'exito': [
-        '¡Excelente trabajo!',
-        '¡Operación exitosa!',
-        '¡Todo listo!',
-        '¡Perfecto!'
-      ]
-    };
-    
-    var listaMensajes = mensajes[tipo] || mensajes['carga'];
-    var mensaje = listaMensajes[Math.floor(Math.random() * listaMensajes.length)];
-    
-    return {
-      success: true,
-      mensaje: mensaje
-    };
-  } catch (error) {
-    return {
-      success: true,
-      mensaje: 'Cargando...'
     };
   }
 }
@@ -168,6 +78,7 @@ function obtenerMensajeAleatorio(tipo) {
  */
 function testBackend() {
   try {
+    Logger.log('🧪 Test Backend ejecutado');
     var email = Session.getActiveUser().getEmail() || 'usuario@qa.com';
     
     return {
@@ -177,9 +88,180 @@ function testBackend() {
       user: email
     };
   } catch (error) {
+    Logger.log('❌ Error en testBackend: ' + error.toString());
     return {
       success: false,
       mensaje: 'Error en el backend: ' + error.message
+    };
+  }
+}
+
+// ===================================================================
+// FUNCIONES PROXY PARA CASOS
+// CRÍTICO: Estas funciones DEBEN estar aquí para ser accesibles
+// ===================================================================
+
+/**
+ * PROXY: Lista casos de prueba
+ * Esta función llama a la función real en Backend_Services_Casos.gs
+ */
+function listarCasos(sheetUrl, filtros) {
+  try {
+    Logger.log('📞 PROXY listarCasos llamado');
+    Logger.log('   URL recibida: ' + sheetUrl);
+    Logger.log('   Filtros: ' + JSON.stringify(filtros));
+    
+    // Validación inmediata
+    if (!sheetUrl || sheetUrl === '' || sheetUrl === null || sheetUrl === undefined) {
+      Logger.log('❌ PROXY: URL inválida');
+      return {
+        success: false,
+        mensaje: 'URL del Sheet no proporcionada',
+        error: 'sheetUrl is null, undefined or empty'
+      };
+    }
+    
+    // Llamar a la función real (que está en Backend_Services_Casos.gs)
+    // NOTA: En Apps Script, las funciones en otros archivos .gs son accesibles
+    var resultado = listarCasosReal(sheetUrl, filtros);
+    
+    Logger.log('✅ PROXY: Resultado obtenido');
+    return resultado;
+    
+  } catch (error) {
+    Logger.log('❌ ERROR en PROXY listarCasos: ' + error.toString());
+    return {
+      success: false,
+      mensaje: 'Error en proxy: ' + error.message,
+      error: error.toString()
+    };
+  }
+}
+
+/**
+ * PROXY: Obtiene hojas disponibles
+ */
+function obtenerHojasDisponibles(sheetUrl) {
+  try {
+    Logger.log('📞 PROXY obtenerHojasDisponibles llamado');
+    
+    if (!sheetUrl) {
+      return {
+        success: false,
+        mensaje: 'URL no proporcionada'
+      };
+    }
+    
+    return obtenerHojasDisponiblesReal(sheetUrl);
+    
+  } catch (error) {
+    Logger.log('❌ ERROR en PROXY obtenerHojasDisponibles: ' + error.toString());
+    return {
+      success: false,
+      mensaje: error.message
+    };
+  }
+}
+
+/**
+ * PROXY: Crea un nuevo caso
+ */
+function crearCaso(datosCaso) {
+  try {
+    Logger.log('📞 PROXY crearCaso llamado');
+    return crearCasoReal(datosCaso);
+  } catch (error) {
+    Logger.log('❌ ERROR en PROXY crearCaso: ' + error.toString());
+    return {
+      success: false,
+      mensaje: error.message
+    };
+  }
+}
+
+/**
+ * PROXY: Crea una nueva hoja
+ */
+function crearNuevaHoja(sheetUrl, nombreHoja) {
+  try {
+    Logger.log('📞 PROXY crearNuevaHoja llamado');
+    return crearNuevaHojaReal(sheetUrl, nombreHoja);
+  } catch (error) {
+    Logger.log('❌ ERROR en PROXY crearNuevaHoja: ' + error.toString());
+    return {
+      success: false,
+      mensaje: error.message
+    };
+  }
+}
+
+// ===================================================================
+// FUNCIONES PROXY PARA WORKSPACE
+// ===================================================================
+
+/**
+ * PROXY: Verifica configuración del Sheet
+ */
+function verificarConfiguracionSheet(sheetUrl) {
+  try {
+    Logger.log('📞 PROXY verificarConfiguracionSheet llamado');
+    
+    if (!sheetUrl) {
+      return {
+        success: false,
+        error: 'URL no proporcionada'
+      };
+    }
+    
+    var sheet = SpreadsheetApp.openByUrl(sheetUrl);
+    var hojaConfig = sheet.getSheetByName('Config');
+    var hojaCasos = sheet.getSheetByName('Casos');
+    var tieneConfigCompleta = hojaConfig !== null && hojaCasos !== null;
+    
+    return {
+      success: true,
+      tieneConfig: tieneConfigCompleta,
+      nombreSheet: sheet.getName()
+    };
+    
+  } catch (error) {
+    Logger.log('❌ Error verificando sheet: ' + error.toString());
+    return {
+      success: false,
+      error: 'No se pudo acceder al Sheet. Verifica la URL y los permisos.'
+    };
+  }
+}
+
+/**
+ * PROXY: Configura workspace
+ */
+function configurarWorkspace(sheetUrl) {
+  try {
+    Logger.log('📞 PROXY configurarWorkspace llamado');
+    // Esta función está en Backend_Services_Workspace.gs
+    return configurarWorkspaceReal(sheetUrl);
+  } catch (error) {
+    Logger.log('❌ ERROR en PROXY configurarWorkspace: ' + error.toString());
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+}
+
+/**
+ * PROXY: Crea nuevo workspace
+ */
+function crearNuevoWorkspace(nombreWorkspace) {
+  try {
+    Logger.log('📞 PROXY crearNuevoWorkspace llamado');
+    return crearNuevoWorkspaceReal(nombreWorkspace);
+  } catch (error) {
+    Logger.log('❌ ERROR en PROXY crearNuevoWorkspace: ' + error.toString());
+    return {
+      success: false,
+      error: error.message
     };
   }
 }
@@ -199,7 +281,6 @@ function registrarError(funcion, error, datos) {
     }
     Logger.log(mensaje);
   } catch (e) {
-    // Si falla el log, al menos intentamos
     Logger.log('Error al registrar error: ' + e.toString());
   }
 }
