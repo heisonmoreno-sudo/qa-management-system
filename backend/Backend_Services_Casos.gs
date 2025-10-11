@@ -253,7 +253,7 @@ function aplicarFiltrosCasos(casos, filtros) {
  * @param {Object} datosCaso - Objeto con datos del caso
  * @returns {Object} Resultado de la operación
  */
-function crearCaso(datosCaso) {
+function crearCasoReal(datosCaso) {
   try {
     Logger.log('Creando caso: ' + datosCaso.titulo);
     
