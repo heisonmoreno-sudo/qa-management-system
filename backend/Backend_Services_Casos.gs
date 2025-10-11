@@ -18,7 +18,7 @@
  *        - soloCandidatosRegresion: boolean
  * @returns {Object} Lista de casos
  */
-function listarCasos(sheetUrl, filtros) {
+function listarCasosReal(sheetUrl, filtros) {
 
   if (!sheetUrl || sheetUrl === '' || sheetUrl === null || sheetUrl === undefined) {
     Logger.log('❌ CRITICAL: sheetUrl es inválida');
