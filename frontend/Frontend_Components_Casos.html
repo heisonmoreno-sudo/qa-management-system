@@ -1,0 +1,1021 @@
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     FRONTEND_COMPONENTS_CASOS.HTML
+     Componente de UI para gestión de casos de prueba
+     VERSIÓN FINAL: Con variables globales correctas usando window
+     
+     CAMBIOS REALIZADOS:
+     ✅ Variables globales usando window.currentSheetUrl
+     ✅ Logs adicionales para debugging
+     ✅ Todas las funciones usan window.currentSheetUrl || currentSheetUrl
+     ✅ Modal de confirmación personalizado
+     ✅ Click fuera con confirmación si hay cambios
+     ✅ Tabla con columnas: ID|Hoja/Módulo|Título|Prioridad|Estado|Crítico|Regresión|Acciones
+     ✅ Carga todos los casos excepto de hoja "Regresiones"
+     ═══════════════════════════════════════════════════════════════════════════ -->
+
+<style>
+  /* ─────────────────────────────────────────────────────────────────────────── */
+  /* ESTILOS ESPECÍFICOS DE CASOS                                                */
+  /* ─────────────────────────────────────────────────────────────────────────── */
+  
+  .casos-container {
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+  
+  .breadcrumb {
+    padding: 1rem 0;
+    font-size: 0.9rem;
+    color: #64748b;
+  }
+  
+  .breadcrumb a {
+    color: #3b82f6;
+    text-decoration: none;
+  }
+  
+  .breadcrumb a:hover {
+    text-decoration: underline;
+  }
+  
+  .filtros-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .input-group label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #475569;
+  }
+  
+  .checkbox-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0;
+  }
+  
+  .checkbox-group input[type="checkbox"] {
+    width: 1.25rem;
+    height: 1.25rem;
+    cursor: pointer;
+  }
+  
+  /* Colores de advertencia restaurados */
+  .advertencia-hoja {
+    background: #fef3c7 !important;
+    border-left: 4px solid #f59e0b !important;
+    padding: 0.75rem;
+    border-radius: 6px;
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+  }
+  
+  /* Columnas de la tabla ajustadas */
+  .table th:nth-child(6),
+  .table td:nth-child(6),
+  .table th:nth-child(7),
+  .table td:nth-child(7) {
+    text-align: center;
+    width: 80px;
+  }
+  
+  /* Indicadores visuales */
+  .indicador-critico,
+  .indicador-regresion {
+    font-size: 1.2rem;
+  }
+</style>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<!-- PANTALLA DE CASOS                                                           -->
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+
+<div id="casosScreen" class="casos-container hidden">
+  <!-- Breadcrumb -->
+  <div class="breadcrumb">
+    🏠 <a href="#" onclick="volverAlDashboard(); return false;">Inicio</a> &gt; Casos
+  </div>
+
+  <!-- Header con botón -->
+  <div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+      <h2 style="font-size: 1.75rem; font-weight: 700;">📋 Gestión de Casos</h2>
+      <button class="btn btn-primary" onclick="abrirModalCrearCaso()">
+        <span>➕</span>
+        <span>Crear Caso</span>
+      </button>
+    </div>
+
+    <!-- Filtros -->
+    <div class="filtros-container">
+      <div class="input-group">
+        <label>🔍 Buscar por título</label>
+        <input type="text" id="filtroBusqueda" class="form-input" placeholder="Buscar..." onkeyup="aplicarFiltrosEnTiempoReal()">
+      </div>
+      
+      <div class="input-group">
+        <label>📂 Hoja/Módulo</label>
+        <select id="filtroHoja" class="form-select" onchange="aplicarFiltrosEnTiempoReal()">
+          <option value="Todas">Todas las hojas</option>
+        </select>
+      </div>
+      
+      <div class="input-group">
+        <label>⚡ Prioridad</label>
+        <select id="filtroPrioridad" class="form-select" onchange="aplicarFiltrosEnTiempoReal()">
+          <option value="Todas">Todas</option>
+          <option value="Critica">Crítica</option>
+          <option value="Alta">Alta</option>
+          <option value="Media">Media</option>
+          <option value="Baja">Baja</option>
+        </select>
+      </div>
+      
+      <div class="input-group">
+        <label>📊 Estado</label>
+        <select id="filtroEstado" class="form-select" onchange="aplicarFiltrosEnTiempoReal()">
+          <option value="Todos">Todos</option>
+          <option value="OK">OK</option>
+          <option value="No_OK">No_OK</option>
+          <option value="Pendiente">Pendiente</option>
+          <option value="En diseno">En diseño</option>
+        </select>
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 2rem; margin-bottom: 1rem;">
+      <div class="checkbox-group">
+        <input type="checkbox" id="filtroFlujoCritico" onchange="aplicarFiltrosEnTiempoReal()">
+        <label for="filtroFlujoCritico">⭐ Solo flujos críticos</label>
+      </div>
+      
+      <div class="checkbox-group">
+        <input type="checkbox" id="filtroCandidatosRegresion" onchange="aplicarFiltrosEnTiempoReal()">
+        <label for="filtroCandidatosRegresion">🔄 Solo candidatos a regresión</label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabla de casos con nuevas columnas -->
+  <div class="table-container">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Hoja/Módulo</th>
+          <th>Título</th>
+          <th>Prioridad</th>
+          <th>Estado</th>
+          <th>Crítico</th>
+          <th>Regresión</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="tablaCasos">
+        <tr>
+          <td colspan="8" style="text-align: center; padding: 2rem; color: #64748b;">
+            Cargando casos...
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<!-- MODAL CREAR CASO                                                            -->
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+
+<div id="modalCrearCaso" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title">➕ Nuevo Caso de Prueba</h3>
+      <button class="modal-close" onclick="cerrarModalCaso()">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <form id="formCrearCaso" onsubmit="guardarCaso(); return false;">
+        <div class="form-group">
+          <label class="form-label">Hoja/Módulo</label>
+          <select id="casoHoja" class="form-select" onchange="manejarCambioHoja()">
+            <option value="">Usar hoja "Casos" (default)</option>
+          </select>
+          <p class="form-help">Si no seleccionas una hoja, el caso se guardará en "Casos"</p>
+          
+          <!-- Advertencia con color original -->
+          <div id="advertenciaHoja" class="advertencia-hoja hidden">
+            <strong>⚠️ No has seleccionado una hoja</strong><br>
+            El caso se guardará en la hoja "Casos" por defecto.
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label required">Formato</label>
+          <select id="casoFormato" class="form-select" required onchange="cambiarFormatoCaso()">
+            <option value="Clasico">Clásico</option>
+            <option value="Gherkin">Gherkin</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label required">Título (mín. 10 caracteres)</label>
+          <input type="text" id="casoTitulo" class="form-input" required minlength="10" placeholder="Ej: Login con usuario válido">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label required">Descripción (mín. 10 caracteres)</label>
+          <textarea id="casoDescripcion" class="form-textarea" required minlength="10" placeholder="Descripción detallada..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label required">Prioridad</label>
+          <select id="casoPrioridad" class="form-select" required>
+            <option value="Critica">🔴 Crítica</option>
+            <option value="Alta">🟠 Alta</option>
+            <option value="Media">🟡 Media</option>
+            <option value="Baja">🟢 Baja</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Tipo de Prueba</label>
+          <select id="casoTipoPrueba" class="form-select">
+            <option value="Funcional">Funcional</option>
+            <option value="Happy Path">Happy Path</option>
+            <option value="Edge Case">Edge Case</option>
+            <option value="API">API</option>
+            <option value="Performance">Performance</option>
+          </select>
+        </div>
+
+        <!-- Campos para formato Clásico -->
+        <div id="camposClasico">
+          <div class="form-group">
+            <label class="form-label required">Pasos</label>
+            <textarea id="casoPasos" class="form-textarea" placeholder="1. Paso uno&#10;2. Paso dos&#10;3. Paso tres..."></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label required">Resultado Esperado</label>
+            <textarea id="casoResultadoEsperado" class="form-textarea" placeholder="Describe el resultado esperado..."></textarea>
+          </div>
+        </div>
+
+        <!-- Campos para formato Gherkin -->
+        <div id="camposGherkin" class="hidden">
+          <div class="form-group">
+            <label class="form-label required">Given (Dado)</label>
+            <textarea id="casoGiven" class="form-textarea" placeholder="Dado que el usuario está en la página de login"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label required">When (Cuando)</label>
+            <textarea id="casoWhen" class="form-textarea" placeholder="Cuando ingresa credenciales válidas"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label required">Then (Entonces)</label>
+            <textarea id="casoThen" class="form-textarea" placeholder="Entonces debe ser redirigido al dashboard"></textarea>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Precondiciones</label>
+          <textarea id="casoPrecondiciones" class="form-textarea" placeholder="Condiciones previas necesarias..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <div class="checkbox-group">
+            <input type="checkbox" id="casoFlujoCritico">
+            <label for="casoFlujoCritico">⭐ Flujo Crítico</label>
+          </div>
+
+          <div class="checkbox-group">
+            <input type="checkbox" id="casoCandidatoRegresion">
+            <label for="casoCandidatoRegresion">🔄 Candidato a Regresión</label>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <div class="modal-footer">
+      <button type="submit" form="formCrearCaso" class="btn btn-primary">
+        💾 Guardar Caso
+      </button>
+      <button type="button" class="btn btn-secondary" onclick="cerrarModalCaso()">
+        Cancelar
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<!-- MODAL CREAR NUEVA HOJA                                                      -->
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+
+<div id="modalCrearHoja" class="modal-overlay">
+  <div class="modal" style="max-width: 600px;">
+    <div class="modal-header">
+      <h3 class="modal-title">📑 Crear Nueva Hoja</h3>
+      <button class="modal-close" onclick="cerrarModalCrearHoja()">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <form id="formCrearHoja" onsubmit="crearHojaNueva(); return false;">
+        
+        <!-- Lista de hojas existentes -->
+        <div style="background: #f8fafc; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+          <strong style="display: block; margin-bottom: 0.5rem;">📋 Hojas existentes:</strong>
+          <div id="listaHojasExistentes" style="color: #64748b; font-size: 0.9rem;">
+            Cargando...
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label required">Nombre de la hoja</label>
+          <input 
+            type="text" 
+            id="nombreNuevaHoja" 
+            class="form-input" 
+            required 
+            placeholder="Ej: Login, Pagos, Carrito"
+            minlength="2"
+            maxlength="50"
+            oninput="validarNombreHoja()"
+          >
+          
+          <!-- Advertencia con color original -->
+          <div id="advertenciaNombreHoja" class="hidden advertencia-hoja">
+            <strong>⚠️ Nombre similar detectado</strong>
+            <p id="mensajeNombreSimilar" style="margin: 0.25rem 0 0 0;"></p>
+          </div>
+          
+          <p class="form-help">
+            Se creará una nueva pestaña en tu Google Sheet
+          </p>
+        </div>
+      </form>
+    </div>
+
+    <div class="modal-footer">
+      <button type="submit" form="formCrearHoja" class="btn btn-primary" id="btnCrearHoja">
+        ✅ Crear Hoja
+      </button>
+      <button type="button" class="btn btn-secondary" onclick="cerrarModalCrearHoja()">
+        Cancelar
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<!-- MODAL CONFIRMACIÓN PERSONALIZADO                                            -->
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+
+<div id="modalConfirmApp" class="modal-overlay">
+  <div class="modal" style="max-width: 450px;">
+    <div class="modal-header" style="border-bottom: none;">
+      <h3 class="modal-title">
+        <span id="confirmAppIcon">⚠️</span>
+        <span id="confirmAppTitle">Confirmar</span>
+      </h3>
+    </div>
+    
+    <div class="modal-body">
+      <p id="confirmAppMessage" style="color: #64748b; font-size: 1rem; line-height: 1.6;">
+        ¿Deseas continuar?
+      </p>
+    </div>
+    
+    <div class="modal-footer" style="border-top: none;">
+      <button id="confirmAppBtnOk" class="btn btn-primary">
+        Aceptar
+      </button>
+      <button id="confirmAppBtnCancel" class="btn btn-secondary">
+        Cancelar
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<!-- SCRIPTS ESPECÍFICOS DE CASOS                                                -->
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+
+<script>
+  // ===================================================================
+  // VARIABLES GLOBALES PARA CASOS - USANDO WINDOW
+  // ===================================================================
+  
+  // CRÍTICO: Hacer estas variables REALMENTE globales usando window
+  window.casosActuales = window.casosActuales || [];
+  window.casosFiltrados = window.casosFiltrados || [];
+  window.currentSheetUrl = window.currentSheetUrl || null;
+  window.hojasExistentesGlobal = window.hojasExistentesGlobal || [];
+  window.formularioTieneCambios = window.formularioTieneCambios || false;
+  window.confirmacionCallback = window.confirmacionCallback || null;
+  
+  // Aliases locales para compatibilidad
+  let casosActuales = window.casosActuales;
+  let casosFiltrados = window.casosFiltrados;
+  let currentSheetUrl = window.currentSheetUrl;
+  let hojasExistentesGlobal = window.hojasExistentesGlobal;
+  let formularioTieneCambios = window.formularioTieneCambios;
+  let confirmacionCallback = window.confirmacionCallback;
+
+  // ===================================================================
+  // SISTEMA DE CONFIRMACIÓN PERSONALIZADO
+  // ===================================================================
+  
+  function mostrarConfirmacionApp(opciones) {
+    return new Promise((resolve) => {
+      document.getElementById('confirmAppIcon').textContent = opciones.icono || '⚠️';
+      document.getElementById('confirmAppTitle').textContent = opciones.titulo || 'Confirmar';
+      document.getElementById('confirmAppMessage').innerHTML = opciones.mensaje || '¿Deseas continuar?';
+      document.getElementById('confirmAppBtnOk').textContent = opciones.textoOk || 'Aceptar';
+      document.getElementById('confirmAppBtnCancel').textContent = opciones.textoCancelar || 'Cancelar';
+      
+      const modal = document.getElementById('modalConfirmApp');
+      modal.classList.add('active');
+      document.body.style.overflow = 'hidden';
+      
+      // Handlers temporales
+      const handleOk = () => {
+        modal.classList.remove('active');
+        document.body.style.overflow = 'auto';
+        resolve(true);
+      };
+      
+      const handleCancel = () => {
+        modal.classList.remove('active');
+        document.body.style.overflow = 'auto';
+        resolve(false);
+      };
+      
+      document.getElementById('confirmAppBtnOk').onclick = handleOk;
+      document.getElementById('confirmAppBtnCancel').onclick = handleCancel;
+    });
+  }
+
+  // ===================================================================
+  // MANEJO DE MODALES CON CONFIRMACIÓN
+  // ===================================================================
+  
+  // Click fuera de modales (excepto confirmación)
+  document.addEventListener('click', function(e) {
+    if (e.target.classList && e.target.classList.contains('modal-overlay')) {
+      const modalId = e.target.id;
+      
+      // No cerrar el modal de confirmación con click fuera
+      if (modalId === 'modalConfirmApp') {
+        return;
+      }
+      
+      // Si es modal de casos y hay cambios
+      if (modalId === 'modalCrearCaso' && window.formularioTieneCambios) {
+        e.stopPropagation();
+        cerrarModalCaso();
+      } else if (modalId === 'modalCrearCaso') {
+        cerrarModal('modalCrearCaso');
+      } else if (modalId) {
+        cerrarModal(modalId);
+      }
+    }
+  });
+
+  // ===================================================================
+  // NAVEGACIÓN DESDE WELCOME SCREEN
+  // ===================================================================
+
+  function irACasos() {
+    const sheetUrl = document.getElementById('sheetUrlInput').value.trim();
+    
+    if (!sheetUrl) {
+      mostrarToast('Por favor ingresa la URL de tu Google Sheet', 'warning');
+      return;
+    }
+    
+    console.log('URL ingresada:', sheetUrl);
+    
+    mostrarSpinner();
+    
+    google.script.run
+      .withSuccessHandler(function(response) {
+        ocultarSpinner();
+        
+        if (response.success) {
+          if (response.tieneConfig) {
+            mostrarToast('Sheet verificado: ' + response.nombreSheet, 'success');
+            mostrarPantallaCasos(sheetUrl);
+          } else {
+            mostrarToast('Sheet encontrado, necesita configuración', 'warning');
+            mostrarPantallaSetup(sheetUrl, response);
+          }
+        }
+      })
+      .withFailureHandler(function(error) {
+        ocultarSpinner();
+        mostrarToast('Error: ' + error.message, 'error');
+      })
+      .verificarConfiguracionSheet(sheetUrl);
+  }
+
+  // ===================================================================
+  // FUNCIONES DE NAVEGACIÓN
+  // ===================================================================
+
+  function mostrarPantallaCasos(sheetUrl) {
+    console.log('🎯 mostrarPantallaCasos recibió URL:', sheetUrl);
+    
+    // CRÍTICO: Guardar en window para que sea REALMENTE global
+    window.currentSheetUrl = sheetUrl;
+    currentSheetUrl = sheetUrl;
+    
+    console.log('✅ currentSheetUrl guardada:', window.currentSheetUrl);
+    
+    document.getElementById('welcomeScreen').classList.add('hidden');
+    document.getElementById('casosScreen').classList.remove('hidden');
+    cargarHojasDisponibles();
+    cargarTodosLosCasos();
+  }
+
+  function volverAlDashboard() {
+    document.getElementById('casosScreen').classList.add('hidden');
+    document.getElementById('welcomeScreen').classList.remove('hidden');
+  }
+
+  // ===================================================================
+  // CARGAR DATOS
+  // ===================================================================
+
+  function cargarHojasDisponibles() {
+    const urlActual = window.currentSheetUrl || currentSheetUrl;
+    if (!urlActual) return;
+
+    google.script.run
+      .withSuccessHandler(function(response) {
+        if (response.success) {
+          const selectHoja = document.getElementById('casoHoja');
+          const selectFiltro = document.getElementById('filtroHoja');
+          
+          selectHoja.innerHTML = '<option value="">Usar hoja "Casos" (default)</option>';
+          selectFiltro.innerHTML = '<option value="Todas">Todas las hojas</option>';
+          
+          // Agregar hoja Casos al filtro
+          selectFiltro.innerHTML += '<option value="Casos">Casos</option>';
+          
+          response.data.hojas.forEach(function(hoja) {
+            selectHoja.innerHTML += '<option value="' + hoja + '">' + hoja + '</option>';
+            selectFiltro.innerHTML += '<option value="' + hoja + '">' + hoja + '</option>';
+          });
+          
+          selectHoja.innerHTML += '<option value="_nueva">➕ Crear nueva hoja</option>';
+        }
+      })
+      .withFailureHandler(function(error) {
+        mostrarToast('Error al cargar hojas: ' + error.message, 'error');
+      })
+      .obtenerHojasDisponibles(urlActual);
+  }
+
+  function cargarTodosLosCasos() {
+    // Usar window.currentSheetUrl para asegurar que está disponible
+    const urlActual = window.currentSheetUrl || currentSheetUrl;
+    
+    if (!urlActual) {
+      console.error('❌ No hay currentSheetUrl definida');
+      console.log('window.currentSheetUrl:', window.currentSheetUrl);
+      console.log('currentSheetUrl local:', currentSheetUrl);
+      mostrarToast('No hay Sheet conectado', 'error');
+      return;
+    }
+
+    console.log('🔍 Iniciando carga de casos desde:', urlActual);
+    mostrarSpinner();
+
+    google.script.run
+      .withSuccessHandler(function(response) {
+        ocultarSpinner();
+        
+        console.log('📦 RESPUESTA COMPLETA DEL BACKEND:', response);
+        
+        if (response && response.success) {
+          window.casosActuales = (response.data && response.data.casos) ? response.data.casos : [];
+          casosActuales = window.casosActuales;
+          window.casosFiltrados = window.casosActuales;
+          casosFiltrados = window.casosFiltrados;
+          
+          console.log('💾 Casos cargados:', casosActuales.length);
+          
+          renderizarTablaCasos(casosActuales);
+          
+          const totalCasos = casosActuales.length;
+          if (totalCasos > 0) {
+            mostrarToast('✅ Casos cargados: ' + totalCasos, 'success');
+          } else {
+            mostrarToast('No hay casos creados aún', 'info');
+          }
+        } else {
+          console.error('❌ Response no es success:', response);
+          window.casosActuales = [];
+          casosActuales = [];
+          renderizarTablaCasos([]);
+          mostrarToast('No se pudieron cargar los casos', 'warning');
+        }
+      })
+      .withFailureHandler(function(error) {
+        ocultarSpinner();
+        console.error('💥 ERROR CRÍTICO al cargar casos:', error);
+        window.casosActuales = [];
+        casosActuales = [];
+        renderizarTablaCasos([]);
+        mostrarToast('Error al cargar casos: ' + error.message, 'error');
+      })
+      .listarCasos(urlActual, { excluirRegresiones: true });
+  }
+
+  function renderizarTablaCasos(casos) {
+    const tbody = document.getElementById('tablaCasos');
+    
+    if (!casos || casos.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 2rem; color: #64748b;">No hay casos para mostrar</td></tr>';
+      return;
+    }
+
+    let html = '';
+    casos.forEach(function(caso) {
+      const badgePrioridad = getBadgePrioridad(caso.Prioridad);
+      const badgeEstado = getBadgeEstado(caso.Estado);
+      const esCritico = caso.FlujoCritico === 'Si' || caso.FlujoCritico === 'Sí';
+      const esRegresion = caso.CandidatoRegresion === 'Si' || caso.CandidatoRegresion === 'Sí';
+      
+      html += '<tr>';
+      html += '<td style="font-family: monospace; font-weight: 600;">' + (caso.ID || '') + '</td>';
+      html += '<td>' + (caso.Hoja || 'Casos') + '</td>';
+      html += '<td>' + (caso.Titulo || '') + '</td>';
+      html += '<td><span class="badge ' + badgePrioridad + '">' + (caso.Prioridad || '') + '</span></td>';
+      html += '<td><span class="badge ' + badgeEstado + '">' + (caso.Estado || 'Pendiente') + '</span></td>';
+      html += '<td class="indicador-critico">' + (esCritico ? '⭐' : '') + '</td>';
+      html += '<td class="indicador-regresion">' + (esRegresion ? '🔄' : '') + '</td>';
+      html += '<td><button class="btn btn-sm btn-secondary" onclick="verDetalleCaso(\'' + caso.ID + '\')">Ver</button></td>';
+      html += '</tr>';
+    });
+    
+    tbody.innerHTML = html;
+  }
+
+  // ===================================================================
+  // MODAL CREAR CASO
+  // ===================================================================
+
+  function abrirModalCrearCaso() {
+    abrirModal('modalCrearCaso');
+    document.getElementById('formCrearCaso').reset();
+    cambiarFormatoCaso();
+    window.formularioTieneCambios = false;
+    formularioTieneCambios = false;
+    
+    // Detectar cambios
+    const inputs = document.querySelectorAll('#formCrearCaso input, #formCrearCaso textarea, #formCrearCaso select');
+    inputs.forEach(input => {
+      input.addEventListener('change', () => {
+        window.formularioTieneCambios = true;
+        formularioTieneCambios = true;
+      });
+      input.addEventListener('input', () => {
+        window.formularioTieneCambios = true;
+        formularioTieneCambios = true;
+      });
+    });
+  }
+
+  async function cerrarModalCaso() {
+    if (window.formularioTieneCambios) {
+      const confirmar = await mostrarConfirmacionApp({
+        titulo: 'Cambios sin guardar',
+        mensaje: 'Tienes cambios sin guardar.<br><br>¿Deseas descartar los cambios y cerrar?',
+        icono: '⚠️',
+        textoOk: 'Descartar cambios',
+        textoCancelar: 'Seguir editando'
+      });
+      
+      if (confirmar) {
+        cerrarModal('modalCrearCaso');
+        window.formularioTieneCambios = false;
+        formularioTieneCambios = false;
+      }
+    } else {
+      cerrarModal('modalCrearCaso');
+    }
+  }
+
+  function cambiarFormatoCaso() {
+    const formato = document.getElementById('casoFormato').value;
+    const camposClasico = document.getElementById('camposClasico');
+    const camposGherkin = document.getElementById('camposGherkin');
+    
+    if (formato === 'Gherkin') {
+      camposClasico.classList.add('hidden');
+      camposGherkin.classList.remove('hidden');
+    } else {
+      camposClasico.classList.remove('hidden');
+      camposGherkin.classList.add('hidden');
+    }
+  }
+
+  function manejarCambioHoja() {
+    const selectHoja = document.getElementById('casoHoja');
+    const advertencia = document.getElementById('advertenciaHoja');
+    
+    if (selectHoja.value === '_nueva') {
+      abrirModalCrearHoja();
+      advertencia.classList.add('hidden');
+    } else if (selectHoja.value === '') {
+      advertencia.classList.remove('hidden');
+    } else {
+      advertencia.classList.add('hidden');
+    }
+  }
+
+  async function guardarCaso() {
+    const formato = document.getElementById('casoFormato').value;
+    const hojaSeleccionada = document.getElementById('casoHoja').value;
+    const urlActual = window.currentSheetUrl || currentSheetUrl;
+    
+    if (!hojaSeleccionada) {
+      const confirmar = await mostrarConfirmacionApp({
+        titulo: 'Hoja no seleccionada',
+        mensaje: 'El caso se guardará en la hoja <strong>"Casos"</strong> por defecto.<br><br>¿Deseas continuar?',
+        icono: '📋',
+        textoOk: 'Guardar en "Casos"',
+        textoCancelar: 'Seleccionar hoja'
+      });
+      
+      if (!confirmar) {
+        return;
+      }
+    }
+    
+    const hojaFinal = hojaSeleccionada || 'Casos';
+    
+    const datosCaso = {
+      sheetUrl: urlActual,
+      hoja: hojaFinal,
+      titulo: document.getElementById('casoTitulo').value,
+      descripcion: document.getElementById('casoDescripcion').value,
+      prioridad: document.getElementById('casoPrioridad').value,
+      tipoPrueba: document.getElementById('casoTipoPrueba').value,
+      formatoCaso: formato,
+      flujoCritico: document.getElementById('casoFlujoCritico').checked,
+      candidatoRegresion: document.getElementById('casoCandidatoRegresion').checked,
+      precondiciones: document.getElementById('casoPrecondiciones').value
+    };
+
+    if (formato === 'Clasico') {
+      datosCaso.pasos = document.getElementById('casoPasos').value;
+      datosCaso.resultadoEsperado = document.getElementById('casoResultadoEsperado').value;
+    } else {
+      datosCaso.scenarioGiven = document.getElementById('casoGiven').value;
+      datosCaso.scenarioWhen = document.getElementById('casoWhen').value;
+      datosCaso.scenarioThen = document.getElementById('casoThen').value;
+    }
+
+    mostrarSpinner();
+
+    google.script.run
+      .withSuccessHandler(function(response) {
+        ocultarSpinner();
+        
+        if (response.success) {
+          const hojaUsada = response.data.hoja || 'Casos';
+          const idCaso = response.data.idCaso || 'QA-TC-X';
+          const mensaje = '✅ Caso ' + idCaso + ' creado exitosamente en hoja "' + hojaUsada + '"';
+          mostrarToast(mensaje, 'success');
+          
+          window.formularioTieneCambios = false;
+          formularioTieneCambios = false;
+          cerrarModal('modalCrearCaso');
+          cargarTodosLosCasos();
+        } else {
+          mostrarToast('Error: ' + response.mensaje, 'error');
+        }
+      })
+      .withFailureHandler(function(error) {
+        ocultarSpinner();
+        mostrarToast('Error al crear caso: ' + error.message, 'error');
+      })
+      .crearCaso(datosCaso);
+  }
+
+  // ===================================================================
+  // MODAL CREAR NUEVA HOJA
+  // ===================================================================
+
+  function abrirModalCrearHoja() {
+    cerrarModal('modalCrearCaso');
+    abrirModal('modalCrearHoja');
+    document.getElementById('nombreNuevaHoja').value = '';
+    document.getElementById('nombreNuevaHoja').focus();
+    cargarHojasExistentesEnModal();
+  }
+
+  function cerrarModalCrearHoja() {
+    cerrarModal('modalCrearHoja');
+    abrirModal('modalCrearCaso');
+    
+    const selectHoja = document.getElementById('casoHoja');
+    if (selectHoja.value === '_nueva') {
+      selectHoja.value = '';
+    }
+    
+    document.getElementById('advertenciaNombreHoja').classList.add('hidden');
+  }
+
+  function cargarHojasExistentesEnModal() {
+    const listaDiv = document.getElementById('listaHojasExistentes');
+    const urlActual = window.currentSheetUrl || currentSheetUrl;
+    
+    google.script.run
+      .withSuccessHandler(function(response) {
+        if (response.success) {
+          window.hojasExistentesGlobal = response.data.hojas;
+          hojasExistentesGlobal = window.hojasExistentesGlobal;
+          
+          if (hojasExistentesGlobal.length === 0) {
+            listaDiv.innerHTML = '<em style="color: #94a3b8;">No hay hojas creadas aún</em>';
+          } else {
+            listaDiv.innerHTML = hojasExistentesGlobal.map(function(hoja) {
+              return '<span style="display: inline-block; background: white; padding: 0.25rem 0.75rem; border-radius: 6px; margin: 0.25rem; border: 1px solid #e2e8f0;">' + hoja + '</span>';
+            }).join('');
+          }
+        }
+      })
+      .withFailureHandler(function(error) {
+        listaDiv.innerHTML = '<em style="color: #ef4444;">Error al cargar hojas</em>';
+      })
+      .obtenerHojasDisponibles(urlActual);
+  }
+
+  function validarNombreHoja() {
+    const nombreInput = document.getElementById('nombreNuevaHoja').value.trim();
+    const advertenciaDiv = document.getElementById('advertenciaNombreHoja');
+    const mensajeP = document.getElementById('mensajeNombreSimilar');
+    const btnCrear = document.getElementById('btnCrearHoja');
+    
+    const hojasGlobal = window.hojasExistentesGlobal || hojasExistentesGlobal;
+    
+    if (!nombreInput || hojasGlobal.length === 0) {
+      advertenciaDiv.classList.add('hidden');
+      btnCrear.disabled = false;
+      return;
+    }
+    
+    const nombreNormalizado = nombreInput.toLowerCase().trim();
+    let hojasSimilares = [];
+    
+    hojasGlobal.forEach(function(hojaExistente) {
+      const existenteNormalizado = hojaExistente.toLowerCase().trim();
+      
+      if (existenteNormalizado === nombreNormalizado) {
+        hojasSimilares.push({ nombre: hojaExistente, tipo: 'exacta' });
+      } else if (existenteNormalizado.indexOf(nombreNormalizado) > -1 || 
+                 nombreNormalizado.indexOf(existenteNormalizado) > -1) {
+        hojasSimilares.push({ nombre: hojaExistente, tipo: 'parcial' });
+      }
+    });
+    
+    if (hojasSimilares.length > 0) {
+      const primera = hojasSimilares[0];
+      
+      if (primera.tipo === 'exacta') {
+        mensajeP.innerHTML = 'Ya existe una hoja llamada "<strong>' + primera.nombre + '</strong>". Por favor usa otro nombre.';
+        advertenciaDiv.style.background = '#fee2e2';
+        advertenciaDiv.style.borderLeftColor = '#ef4444';
+        btnCrear.disabled = true;
+      } else {
+        mensajeP.innerHTML = 'Ya existe una hoja similar: "<strong>' + primera.nombre + '</strong>". ¿Estás seguro de crear "' + nombreInput + '"?';
+        advertenciaDiv.classList.remove('hidden');
+        btnCrear.disabled = false;
+      }
+      
+      advertenciaDiv.classList.remove('hidden');
+    } else {
+      advertenciaDiv.classList.add('hidden');
+      btnCrear.disabled = false;
+    }
+  }
+
+  function crearHojaNueva() {
+    const nombreHoja = document.getElementById('nombreNuevaHoja').value.trim();
+    const urlActual = window.currentSheetUrl || currentSheetUrl;
+    
+    if (!nombreHoja) {
+      mostrarToast('Ingresa un nombre para la hoja', 'warning');
+      return;
+    }
+    
+    const btnCrear = document.getElementById('btnCrearHoja');
+    if (btnCrear.disabled) {
+      mostrarToast('Este nombre ya existe. Usa otro nombre.', 'error');
+      return;
+    }
+    
+    mostrarSpinner();
+    
+    google.script.run
+      .withSuccessHandler(function(response) {
+        ocultarSpinner();
+        
+        if (response.success) {
+          mostrarToast('✅ Hoja creada: ' + nombreHoja, 'success');
+          cerrarModalCrearHoja();
+          cargarHojasDisponibles();
+          
+          setTimeout(function() {
+            const selectHoja = document.getElementById('casoHoja');
+            selectHoja.value = nombreHoja;
+          }, 500);
+          
+        } else {
+          mostrarToast('Error: ' + response.mensaje, 'error');
+        }
+      })
+      .withFailureHandler(function(error) {
+        ocultarSpinner();
+        mostrarToast('Error al crear hoja: ' + error.message, 'error');
+      })
+      .crearNuevaHoja(urlActual, nombreHoja);
+  }
+
+  // ===================================================================
+  // FILTROS
+  // ===================================================================
+
+  function aplicarFiltrosEnTiempoReal() {
+    const busqueda = document.getElementById('filtroBusqueda').value.toLowerCase();
+    const hoja = document.getElementById('filtroHoja').value;
+    const prioridad = document.getElementById('filtroPrioridad').value;
+    const estado = document.getElementById('filtroEstado').value;
+    const soloFlujoCritico = document.getElementById('filtroFlujoCritico').checked;
+    const soloCandidatosRegresion = document.getElementById('filtroCandidatosRegresion').checked;
+
+    const casosGlobales = window.casosActuales || casosActuales;
+    
+    window.casosFiltrados = casosGlobales.filter(function(caso) {
+      if (busqueda && busqueda !== '') {
+        const titulo = (caso.Titulo || '').toLowerCase();
+        const descripcion = (caso.Descripcion || '').toLowerCase();
+        if (!titulo.includes(busqueda) && !descripcion.includes(busqueda)) {
+          return false;
+        }
+      }
+      
+      if (hoja && hoja !== 'Todas') {
+        if ((caso.Hoja || 'Casos') !== hoja) {
+          return false;
+        }
+      }
+      
+      if (prioridad && prioridad !== 'Todas') {
+        if (caso.Prioridad !== prioridad) {
+          return false;
+        }
+      }
+      
+      if (estado && estado !== 'Todos') {
+        if (caso.Estado !== estado) {
+          return false;
+        }
+      }
+      
+      if (soloFlujoCritico && caso.FlujoCritico !== 'Si' && caso.FlujoCritico !== 'Sí') {
+        return false;
+      }
+      
+      if (soloCandidatosRegresion && caso.CandidatoRegresion !== 'Si' && caso.CandidatoRegresion !== 'Sí') {
+        return false;
+      }
+      
+      return true;
+    });
+
+    casosFiltrados = window.casosFiltrados;
+    renderizarTablaCasos(casosFiltrados);
+  }
+
+  function verDetalleCaso(casoId) {
+    alert('Detalle de caso: ' + casoId + '\n\nEsta funcionalidad se implementará en el próximo sprint.');
+  }
+
+  console.log('✅ Frontend Components Casos cargado correctamente');
+</script>
