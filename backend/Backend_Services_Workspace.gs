@@ -463,7 +463,7 @@ function generarNombreUnico(nombreBase) {
  * @param {string} nombreWorkspace - Nombre del workspace
  * @returns {Object} URL y detalles del nuevo Sheet
  */
-function crearNuevoWorkspace(nombreWorkspace) {
+function crearNuevoWorkspaceReal(nombreWorkspace) {
   try {
     Logger.log('Creando nuevo workspace: ' + nombreWorkspace);
     
