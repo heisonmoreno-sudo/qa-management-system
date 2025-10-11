@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QA Management System</title>
+  
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- ESTILOS GLOBALES - Cargados desde archivo separado                  -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <?!= include('Frontend_Styles_Base'); ?>
+</head>
+
+<body>
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- HEADER                                                               -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <div class="header">
+    <div class="header-content">
+      <div class="logo">
+        <span>📊</span>
+        <span>QA Management System</span>
+      </div>
+      <div class="user-info">
+        <div class="user-avatar" id="userAvatar">?</div>
+        <span id="userEmail">Cargando...</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- CONTENEDOR PRINCIPAL                                                 -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <div class="container">
+    <!-- Pantalla de Bienvenida -->
+    <div id="welcomeScreen" class="welcome-screen">
+      <div class="card" style="max-width: 700px; margin: 0 auto;">
+        <div class="welcome-icon">📊</div>
+        <h1 class="welcome-title">Bienvenido a QA Management</h1>
+        <p class="welcome-subtitle">
+          Sistema integral para gestión de casos de prueba, bugs y regresiones
+        </p>
+        
+        <div style="max-width: 500px; margin: 0 auto;">
+          <!-- Input para URL del Google Sheet -->
+          <div class="mb-2">
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #475569;">
+              📄 URL de tu Google Sheet:
+            </label>
+            <input 
+              type="text" 
+              id="sheetUrlInput" 
+              class="input-field" 
+              placeholder="https://docs.google.com/spreadsheets/d/..."
+              style="width: 100%; padding: 0.75rem; border: 1px solid #e2e8f0; border-radius: 8px;"
+            >
+            <p style="font-size: 0.85rem; color: #64748b; margin-top: 0.5rem;">
+              Pega aquí la URL de tu Google Sheet de pruebas
+            </p>
+          </div>
+
+          <button class="btn btn-primary btn-block" onclick="irACasos()">
+            <span>📋</span>
+            <span>Conectar a mi Sheet</span>
+          </button>
+
+          <button class="btn btn-secondary btn-block" onclick="iniciarCreacionWorkspace()">
+            <span>✨</span>
+            <span>Crear Nuevo Workspace</span>
+          </button>
+
+          <div style="border-top: 1px solid #e2e8f0; margin: 1.5rem 0; padding-top: 1.5rem;">
+            <button class="btn btn-secondary btn-block" onclick="testearBackend()">
+              <span>🚀</span>
+              <span>Probar Conexión Backend</span>
+            </button>
+            
+            <button class="btn btn-secondary btn-block" onclick="mostrarInfo()">
+              <span>📚</span>
+              <span>Ver Guía de Inicio</span>
+            </button>
+          </div>
+          
+          <p class="mt-2" style="color: #64748b; font-size: 0.9rem; text-align: center;">
+            Sprint 2: Gestión de casos de prueba funcional
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- OVERLAY DE CARGA                                                     -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <div id="loadingOverlay" class="loading-overlay">
+    <div class="loading-content">
+      <div class="spinner"></div>
+      <div class="loading-message" id="loadingMessage">Cargando...</div>
+      <div class="loading-tip" id="loadingTip">Preparando tu arsenal de testing...</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- NOTIFICACIÓN                                                         -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <div id="notification" class="notification">
+    <span id="notificationIcon">✓</span>
+    <span id="notificationMessage">Mensaje</span>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- SCRIPTS GLOBALES - Cargados desde archivo separado                  -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <?!= include('Frontend_Scripts_Main'); ?>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- COMPONENTES - Casos y Setup                                         -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <?!= include('Frontend_Components_Casos'); ?>
+  <?!= include('Frontend_Components_Setup'); ?>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- SCRIPTS ESPECÍFICOS DEL INDEX                                       -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <script>
+    // ===================================================================
+    // VARIABLES GLOBALES
+    // ===================================================================
+    
+    let currentUser = null;
+    
+    // ===================================================================
+    // INICIALIZACIÓN
+    // ===================================================================
+    
+    window.onload = function() {
+      cargarUsuario();
+    };
+    
+    // ===================================================================
+    // FUNCIONES DE USUARIO
+    // ===================================================================
+    
+    function cargarUsuario() {
+  // HOTFIX: Cargar usuario de forma simplificada sin llamar al backend
+  try {
+    // Intentar obtener email del template
+    const email = '<?= userEmail ?>' || 'usuario@qa.com';
+    
+    if (email && email !== '') {
+      currentUser = { email: email };
+      document.getElementById('userEmail').textContent = email;
+      
+      // Mostrar iniciales en avatar
+      const iniciales = email.substring(0, 2).toUpperCase();
+      document.getElementById('userAvatar').textContent = iniciales;
+      
+      mostrarToast('¡Bienvenido! Sistema cargado correctamente', 'success');
+    } else {
+      document.getElementById('userEmail').textContent = 'Usuario QA';
+      document.getElementById('userAvatar').textContent = 'QA';
+      mostrarToast('Sistema cargado', 'success');
+    }
+  } catch (error) {
+    console.error('Error en cargarUsuario:', error);
+    document.getElementById('userEmail').textContent = 'Usuario QA';
+    document.getElementById('userAvatar').textContent = 'QA';
+    mostrarToast('Sistema cargado', 'success');
+  }
+}
+    
+    // ===================================================================
+    // FUNCIONES DE PRUEBA
+    // ===================================================================
+    
+    function testearBackend() {
+      mostrarSpinner();
+      
+      google.script.run
+        .withSuccessHandler(function(response) {
+          ocultarSpinner();
+          
+          if (response.success) {
+            const mensaje = 'Backend funcionando! Usuario: ' + response.user;
+            mostrarToast(mensaje, 'success');
+            console.log('Test exitoso:', response);
+          } else {
+            mostrarToast('Error en el test', 'error');
+          }
+        })
+        .withFailureHandler(function(error) {
+          ocultarSpinner();
+          mostrarToast('Error de conexión: ' + error.message, 'error');
+        })
+        .testBackend();
+    }
+    
+    function mostrarInfo() {
+      alert('Sistema QA Management\n\nVersión: 2.0 (Sprint 2)\n\nFuncionalidades:\n- Gestión de casos\n- Auto-configuración de workspace\n- Creación de hojas organizacionales\n\nPróximamente:\n- Integración con Trello\n- Ejecución de pruebas\n- Informes automáticos');
+    }
+    
+    // ===================================================================
+    // MANEJO DE ERRORES GLOBALES
+    // ===================================================================
+    
+    window.onerror = function(msg, url, lineNo, columnNo, error) {
+      console.error('Error:', msg, 'at', lineNo + ':' + columnNo);
+      mostrarToast('Ocurrió un error inesperado', 'error');
+      return false;
+    };
+  </script>
+</body>
+</html>
