@@ -19,6 +19,15 @@
  * @returns {Object} Lista de casos
  */
 function listarCasos(sheetUrl, filtros) {
+
+  if (!sheetUrl || sheetUrl === '' || sheetUrl === null || sheetUrl === undefined) {
+    Logger.log('❌ CRITICAL: sheetUrl es inválida');
+    return {
+      success: false,
+      mensaje: 'URL del Sheet no proporcionada',
+      error: 'sheetUrl is null, undefined or empty'
+    };
+  }
   try {
     // AGREGAR: Log de entrada para debug
     Logger.log('=== INICIO listarCasos ===');
