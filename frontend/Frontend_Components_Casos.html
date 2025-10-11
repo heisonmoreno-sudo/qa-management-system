@@ -1,16 +1,8 @@
-<!-- ═══════════════════════════════════════════════════════════════════════════
+
+      <!-- ═══════════════════════════════════════════════════════════════════════════
      FRONTEND_COMPONENTS_CASOS.HTML
      Componente de UI para gestión de casos de prueba
-     VERSIÓN FINAL: Con variables globales correctas usando window
-     
-     CAMBIOS REALIZADOS:
-     ✅ Variables globales usando window.currentSheetUrl
-     ✅ Logs adicionales para debugging
-     ✅ Todas las funciones usan window.currentSheetUrl || currentSheetUrl
-     ✅ Modal de confirmación personalizado
-     ✅ Click fuera con confirmación si hay cambios
-     ✅ Tabla con columnas: ID|Hoja/Módulo|Título|Prioridad|Estado|Crítico|Regresión|Acciones
-     ✅ Carga todos los casos excepto de hoja "Regresiones"
+     VERSIÓN CORREGIDA: Manejo robusto de currentSheetUrl
      ═══════════════════════════════════════════════════════════════════════════ -->
 
 <style>
@@ -70,7 +62,6 @@
     cursor: pointer;
   }
   
-  /* Colores de advertencia restaurados */
   .advertencia-hoja {
     background: #fef3c7 !important;
     border-left: 4px solid #f59e0b !important;
@@ -80,7 +71,6 @@
     font-size: 0.9rem;
   }
   
-  /* Columnas de la tabla ajustadas */
   .table th:nth-child(6),
   .table td:nth-child(6),
   .table th:nth-child(7),
@@ -89,7 +79,6 @@
     width: 80px;
   }
   
-  /* Indicadores visuales */
   .indicador-critico,
   .indicador-regresion {
     font-size: 1.2rem;
@@ -101,12 +90,10 @@
 <!-- ═══════════════════════════════════════════════════════════════════════════ -->
 
 <div id="casosScreen" class="casos-container hidden">
-  <!-- Breadcrumb -->
   <div class="breadcrumb">
     🏠 <a href="#" onclick="volverAlDashboard(); return false;">Inicio</a> &gt; Casos
   </div>
 
-  <!-- Header con botón -->
   <div class="card">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
       <h2 style="font-size: 1.75rem; font-weight: 700;">📋 Gestión de Casos</h2>
@@ -116,7 +103,6 @@
       </button>
     </div>
 
-    <!-- Filtros -->
     <div class="filtros-container">
       <div class="input-group">
         <label>🔍 Buscar por título</label>
@@ -166,7 +152,6 @@
     </div>
   </div>
 
-  <!-- Tabla de casos con nuevas columnas -->
   <div class="table-container">
     <table class="table">
       <thead>
@@ -212,7 +197,6 @@
           </select>
           <p class="form-help">Si no seleccionas una hoja, el caso se guardará en "Casos"</p>
           
-          <!-- Advertencia con color original -->
           <div id="advertenciaHoja" class="advertencia-hoja hidden">
             <strong>⚠️ No has seleccionado una hoja</strong><br>
             El caso se guardará en la hoja "Casos" por defecto.
@@ -258,7 +242,6 @@
           </select>
         </div>
 
-        <!-- Campos para formato Clásico -->
         <div id="camposClasico">
           <div class="form-group">
             <label class="form-label required">Pasos</label>
@@ -271,7 +254,6 @@
           </div>
         </div>
 
-        <!-- Campos para formato Gherkin -->
         <div id="camposGherkin" class="hidden">
           <div class="form-group">
             <label class="form-label required">Given (Dado)</label>
@@ -333,7 +315,6 @@
     <div class="modal-body">
       <form id="formCrearHoja" onsubmit="crearHojaNueva(); return false;">
         
-        <!-- Lista de hojas existentes -->
         <div style="background: #f8fafc; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
           <strong style="display: block; margin-bottom: 0.5rem;">📋 Hojas existentes:</strong>
           <div id="listaHojasExistentes" style="color: #64748b; font-size: 0.9rem;">
@@ -354,7 +335,6 @@
             oninput="validarNombreHoja()"
           >
           
-          <!-- Advertencia con color original -->
           <div id="advertenciaNombreHoja" class="hidden advertencia-hoja">
             <strong>⚠️ Nombre similar detectado</strong>
             <p id="mensajeNombreSimilar" style="margin: 0.25rem 0 0 0;"></p>
@@ -409,29 +389,70 @@
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════════════════════ -->
-<!-- SCRIPTS ESPECÍFICOS DE CASOS                                                -->
+<!-- SCRIPTS ESPECÍFICOS DE CASOS - VERSIÓN CORREGIDA                            -->
 <!-- ═══════════════════════════════════════════════════════════════════════════ -->
 
 <script>
   // ===================================================================
-  // VARIABLES GLOBALES PARA CASOS - USANDO WINDOW
+  // INICIALIZACIÓN DE VARIABLES GLOBALES
   // ===================================================================
   
-  // CRÍTICO: Hacer estas variables REALMENTE globales usando window
-  window.casosActuales = window.casosActuales || [];
-  window.casosFiltrados = window.casosFiltrados || [];
-  window.currentSheetUrl = window.currentSheetUrl || null;
-  window.hojasExistentesGlobal = window.hojasExistentesGlobal || [];
-  window.formularioTieneCambios = window.formularioTieneCambios || false;
-  window.confirmacionCallback = window.confirmacionCallback || null;
+  (function() {
+    if (!window.casosActuales) window.casosActuales = [];
+    if (!window.casosFiltrados) window.casosFiltrados = [];
+    if (!window.currentSheetUrl) window.currentSheetUrl = null;
+    if (!window.hojasExistentesGlobal) window.hojasExistentesGlobal = [];
+    if (!window.formularioTieneCambios) window.formularioTieneCambios = false;
+    if (!window.confirmacionCallback) window.confirmacionCallback = null;
+    
+    console.log('✅ Variables globales de Casos inicializadas');
+  })();
+
+  // ===================================================================
+  // FUNCIONES AUXILIARES PARA MANEJO DE URL
+  // ===================================================================
   
-  // Aliases locales para compatibilidad
-  let casosActuales = window.casosActuales;
-  let casosFiltrados = window.casosFiltrados;
-  let currentSheetUrl = window.currentSheetUrl;
-  let hojasExistentesGlobal = window.hojasExistentesGlobal;
-  let formularioTieneCambios = window.formularioTieneCambios;
-  let confirmacionCallback = window.confirmacionCallback;
+  function obtenerCurrentSheetUrl() {
+    return window.currentSheetUrl;
+  }
+  
+  function guardarCurrentSheetUrl(url) {
+    console.log('💾 Guardando currentSheetUrl:', url);
+    window.currentSheetUrl = url;
+    
+    try {
+      sessionStorage.setItem('qaSheetUrl', url);
+    } catch (e) {
+      console.warn('No se pudo guardar en sessionStorage:', e);
+    }
+  }
+  
+  function recuperarSheetUrl() {
+    if (window.currentSheetUrl) {
+      console.log('✅ URL recuperada de window.currentSheetUrl');
+      return window.currentSheetUrl;
+    }
+    
+    try {
+      const urlFromStorage = sessionStorage.getItem('qaSheetUrl');
+      if (urlFromStorage) {
+        console.log('✅ URL recuperada de sessionStorage');
+        window.currentSheetUrl = urlFromStorage;
+        return urlFromStorage;
+      }
+    } catch (e) {
+      console.warn('No se pudo leer de sessionStorage:', e);
+    }
+    
+    const inputUrl = document.getElementById('sheetUrlInput');
+    if (inputUrl && inputUrl.value) {
+      console.log('✅ URL recuperada del input');
+      return inputUrl.value.trim();
+    }
+    
+    console.error('❌ No se pudo recuperar la URL del Sheet');
+    return null;
+  }
 
   // ===================================================================
   // SISTEMA DE CONFIRMACIÓN PERSONALIZADO
@@ -449,7 +470,6 @@
       modal.classList.add('active');
       document.body.style.overflow = 'hidden';
       
-      // Handlers temporales
       const handleOk = () => {
         modal.classList.remove('active');
         document.body.style.overflow = 'auto';
@@ -468,32 +488,6 @@
   }
 
   // ===================================================================
-  // MANEJO DE MODALES CON CONFIRMACIÓN
-  // ===================================================================
-  
-  // Click fuera de modales (excepto confirmación)
-  document.addEventListener('click', function(e) {
-    if (e.target.classList && e.target.classList.contains('modal-overlay')) {
-      const modalId = e.target.id;
-      
-      // No cerrar el modal de confirmación con click fuera
-      if (modalId === 'modalConfirmApp') {
-        return;
-      }
-      
-      // Si es modal de casos y hay cambios
-      if (modalId === 'modalCrearCaso' && window.formularioTieneCambios) {
-        e.stopPropagation();
-        cerrarModalCaso();
-      } else if (modalId === 'modalCrearCaso') {
-        cerrarModal('modalCrearCaso');
-      } else if (modalId) {
-        cerrarModal(modalId);
-      }
-    }
-  });
-
-  // ===================================================================
   // NAVEGACIÓN DESDE WELCOME SCREEN
   // ===================================================================
 
@@ -505,7 +499,7 @@
       return;
     }
     
-    console.log('URL ingresada:', sheetUrl);
+    console.log('🎯 irACasos - URL ingresada:', sheetUrl);
     
     mostrarSpinner();
     
@@ -535,16 +529,27 @@
   // ===================================================================
 
   function mostrarPantallaCasos(sheetUrl) {
-    console.log('🎯 mostrarPantallaCasos recibió URL:', sheetUrl);
+    console.log('🎯 mostrarPantallaCasos - URL recibida:', sheetUrl);
     
-    // CRÍTICO: Guardar en window para que sea REALMENTE global
-    window.currentSheetUrl = sheetUrl;
-    currentSheetUrl = sheetUrl;
+    if (!sheetUrl || sheetUrl === '') {
+      console.error('❌ mostrarPantallaCasos recibió URL vacía');
+      mostrarToast('Error: URL inválida', 'error');
+      return;
+    }
     
-    console.log('✅ currentSheetUrl guardada:', window.currentSheetUrl);
+    guardarCurrentSheetUrl(sheetUrl);
+    
+    const inputUrl = document.getElementById('sheetUrlInput');
+    if (inputUrl) {
+      inputUrl.value = sheetUrl;
+      console.log('✅ URL también guardada en input');
+    }
+    
+    console.log('✅ URL guardada, verificando:', window.currentSheetUrl);
     
     document.getElementById('welcomeScreen').classList.add('hidden');
     document.getElementById('casosScreen').classList.remove('hidden');
+    
     cargarHojasDisponibles();
     cargarTodosLosCasos();
   }
@@ -559,8 +564,15 @@
   // ===================================================================
 
   function cargarHojasDisponibles() {
-    const urlActual = window.currentSheetUrl || currentSheetUrl;
-    if (!urlActual) return;
+    const urlActual = recuperarSheetUrl();
+    
+    if (!urlActual) {
+      console.error('❌ cargarHojasDisponibles: No hay URL');
+      mostrarToast('Error: No hay Sheet conectado', 'error');
+      return;
+    }
+
+    console.log('📂 Cargando hojas desde:', urlActual);
 
     google.script.run
       .withSuccessHandler(function(response) {
@@ -571,7 +583,6 @@
           selectHoja.innerHTML = '<option value="">Usar hoja "Casos" (default)</option>';
           selectFiltro.innerHTML = '<option value="Todas">Todas las hojas</option>';
           
-          // Agregar hoja Casos al filtro
           selectFiltro.innerHTML += '<option value="Casos">Casos</option>';
           
           response.data.hojas.forEach(function(hoja) {
@@ -580,68 +591,143 @@
           });
           
           selectHoja.innerHTML += '<option value="_nueva">➕ Crear nueva hoja</option>';
+          
+          console.log('✅ Hojas cargadas:', response.data.hojas.length);
         }
       })
       .withFailureHandler(function(error) {
+        console.error('❌ Error cargando hojas:', error);
         mostrarToast('Error al cargar hojas: ' + error.message, 'error');
       })
       .obtenerHojasDisponibles(urlActual);
   }
 
   function cargarTodosLosCasos() {
-    // Usar window.currentSheetUrl para asegurar que está disponible
-    const urlActual = window.currentSheetUrl || currentSheetUrl;
+    let urlActual = recuperarSheetUrl();
     
     if (!urlActual) {
-      console.error('❌ No hay currentSheetUrl definida');
-      console.log('window.currentSheetUrl:', window.currentSheetUrl);
-      console.log('currentSheetUrl local:', currentSheetUrl);
-      mostrarToast('No hay Sheet conectado', 'error');
+      const inputUrl = document.getElementById('sheetUrlInput');
+      if (inputUrl && inputUrl.value) {
+        urlActual = inputUrl.value.trim();
+        guardarCurrentSheetUrl(urlActual);
+        console.log('📌 URL recuperada del input:', urlActual);
+      }
+    }
+    
+    if (!urlActual || urlActual === '') {
+      console.error('❌ cargarTodosLosCasos: No hay URL disponible');
+      console.error('❌ window.currentSheetUrl:', window.currentSheetUrl);
+      console.error('❌ Input value:', document.getElementById('sheetUrlInput')?.value);
+      
+      const tbody = document.getElementById('tablaCasos');
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="8" style="text-align: center; padding: 2rem;">
+            <div style="color: #ef4444; font-size: 1.1rem; margin-bottom: 0.5rem;">
+              ❌ No hay Sheet conectado
+            </div>
+            <button onclick="volverAlDashboard()" class="btn btn-primary" style="margin-top: 1rem;">
+              Volver al Inicio
+            </button>
+          </td>
+        </tr>
+      `;
+      mostrarToast('Error: No hay Sheet conectado', 'error');
       return;
     }
 
-    console.log('🔍 Iniciando carga de casos desde:', urlActual);
+    console.log('🔍 Cargando casos desde:', urlActual);
+    console.log('📦 Parámetros que se enviarán:', { excluirRegresiones: true });
+    
     mostrarSpinner();
 
     google.script.run
       .withSuccessHandler(function(response) {
         ocultarSpinner();
         
-        console.log('📦 RESPUESTA COMPLETA DEL BACKEND:', response);
+        console.log('📦 RESPUESTA DEL BACKEND:');
+        console.log('   - Tipo:', typeof response);
+        console.log('   - Es null:', response === null);
+        console.log('   - Es undefined:', response === undefined);
+        console.log('   - Contenido:', JSON.stringify(response));
         
-        if (response && response.success) {
+        if (response === null || response === undefined) {
+          console.error('❌ Backend retornó NULL/UNDEFINED');
+          const tbody = document.getElementById('tablaCasos');
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="8" style="text-align: center; padding: 2rem;">
+                <div style="color: #ef4444;">⚠️ Error: El backend retornó null</div>
+                <div style="color: #64748b; margin-top: 0.5rem;">
+                  Esto significa que la llamada no llegó correctamente al servidor.
+                </div>
+                <button onclick="cargarTodosLosCasos()" class="btn btn-primary" style="margin-top: 1rem;">
+                  Reintentar
+                </button>
+              </td>
+            </tr>
+          `;
+          mostrarToast('Error de comunicación con el backend', 'error');
+          return;
+        }
+        
+        if (response.success === false) {
+          console.error('❌ Backend error:', response.mensaje);
+          mostrarToast('Error: ' + response.mensaje, 'error');
+          const tbody = document.getElementById('tablaCasos');
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="8" style="text-align: center; padding: 2rem; color: #ef4444;">
+                ${response.mensaje || 'Error desconocido'}
+              </td>
+            </tr>
+          `;
+          return;
+        }
+        
+        if (response.success === true) {
           window.casosActuales = (response.data && response.data.casos) ? response.data.casos : [];
-          casosActuales = window.casosActuales;
           window.casosFiltrados = window.casosActuales;
-          casosFiltrados = window.casosFiltrados;
           
-          console.log('💾 Casos cargados:', casosActuales.length);
+          console.log('✅ Casos cargados:', window.casosActuales.length);
           
-          renderizarTablaCasos(casosActuales);
+          renderizarTablaCasos(window.casosActuales);
           
-          const totalCasos = casosActuales.length;
-          if (totalCasos > 0) {
-            mostrarToast('✅ Casos cargados: ' + totalCasos, 'success');
+          if (window.casosActuales.length > 0) {
+            mostrarToast('✅ Casos cargados: ' + window.casosActuales.length, 'success');
           } else {
             mostrarToast('No hay casos creados aún', 'info');
           }
-        } else {
-          console.error('❌ Response no es success:', response);
-          window.casosActuales = [];
-          casosActuales = [];
-          renderizarTablaCasos([]);
-          mostrarToast('No se pudieron cargar los casos', 'warning');
+          return;
         }
+        
+        console.warn('⚠️ Respuesta con formato inesperado');
+        mostrarToast('Formato de respuesta inesperado', 'warning');
       })
       .withFailureHandler(function(error) {
         ocultarSpinner();
-        console.error('💥 ERROR CRÍTICO al cargar casos:', error);
-        window.casosActuales = [];
-        casosActuales = [];
-        renderizarTablaCasos([]);
-        mostrarToast('Error al cargar casos: ' + error.message, 'error');
+        console.error('💥 ERROR CRÍTICO:', error);
+        console.error('💥 Tipo:', typeof error);
+        console.error('💥 Mensaje:', error.message);
+        
+        mostrarToast('Error: ' + error.message, 'error');
+        
+        const tbody = document.getElementById('tablaCasos');
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="8" style="text-align: center; padding: 2rem;">
+              <div style="color: #ef4444;">💥 Error Fatal</div>
+              <div style="color: #64748b; margin-top: 0.5rem;">${error.message}</div>
+              <button onclick="cargarTodosLosCasos()" class="btn btn-primary" style="margin-top: 1rem;">
+                Reintentar
+              </button>
+            </td>
+          </tr>
+        `;
       })
       .listarCasos(urlActual, { excluirRegresiones: true });
+    
+    console.log('📤 Llamada enviada al backend con URL:', urlActual);
   }
 
   function renderizarTablaCasos(casos) {
@@ -683,19 +769,11 @@
     document.getElementById('formCrearCaso').reset();
     cambiarFormatoCaso();
     window.formularioTieneCambios = false;
-    formularioTieneCambios = false;
     
-    // Detectar cambios
     const inputs = document.querySelectorAll('#formCrearCaso input, #formCrearCaso textarea, #formCrearCaso select');
     inputs.forEach(input => {
-      input.addEventListener('change', () => {
-        window.formularioTieneCambios = true;
-        formularioTieneCambios = true;
-      });
-      input.addEventListener('input', () => {
-        window.formularioTieneCambios = true;
-        formularioTieneCambios = true;
-      });
+      input.addEventListener('change', () => { window.formularioTieneCambios = true; });
+      input.addEventListener('input', () => { window.formularioTieneCambios = true; });
     });
   }
 
@@ -712,7 +790,6 @@
       if (confirmar) {
         cerrarModal('modalCrearCaso');
         window.formularioTieneCambios = false;
-        formularioTieneCambios = false;
       }
     } else {
       cerrarModal('modalCrearCaso');
@@ -750,7 +827,12 @@
   async function guardarCaso() {
     const formato = document.getElementById('casoFormato').value;
     const hojaSeleccionada = document.getElementById('casoHoja').value;
-    const urlActual = window.currentSheetUrl || currentSheetUrl;
+    const urlActual = recuperarSheetUrl();
+    
+    if (!urlActual) {
+      mostrarToast('Error: No hay Sheet conectado', 'error');
+      return;
+    }
     
     if (!hojaSeleccionada) {
       const confirmar = await mostrarConfirmacionApp({
@@ -761,9 +843,7 @@
         textoCancelar: 'Seleccionar hoja'
       });
       
-      if (!confirmar) {
-        return;
-      }
+      if (!confirmar) return;
     }
     
     const hojaFinal = hojaSeleccionada || 'Casos';
@@ -803,7 +883,6 @@
           mostrarToast(mensaje, 'success');
           
           window.formularioTieneCambios = false;
-          formularioTieneCambios = false;
           cerrarModal('modalCrearCaso');
           cargarTodosLosCasos();
         } else {
@@ -843,18 +922,22 @@
 
   function cargarHojasExistentesEnModal() {
     const listaDiv = document.getElementById('listaHojasExistentes');
-    const urlActual = window.currentSheetUrl || currentSheetUrl;
+    const urlActual = recuperarSheetUrl();
+    
+    if (!urlActual) {
+      listaDiv.innerHTML = '<em style="color: #ef4444;">Error: No hay Sheet conectado</em>';
+      return;
+    }
     
     google.script.run
       .withSuccessHandler(function(response) {
         if (response.success) {
           window.hojasExistentesGlobal = response.data.hojas;
-          hojasExistentesGlobal = window.hojasExistentesGlobal;
           
-          if (hojasExistentesGlobal.length === 0) {
+          if (window.hojasExistentesGlobal.length === 0) {
             listaDiv.innerHTML = '<em style="color: #94a3b8;">No hay hojas creadas aún</em>';
           } else {
-            listaDiv.innerHTML = hojasExistentesGlobal.map(function(hoja) {
+            listaDiv.innerHTML = window.hojasExistentesGlobal.map(function(hoja) {
               return '<span style="display: inline-block; background: white; padding: 0.25rem 0.75rem; border-radius: 6px; margin: 0.25rem; border: 1px solid #e2e8f0;">' + hoja + '</span>';
             }).join('');
           }
@@ -872,9 +955,7 @@
     const mensajeP = document.getElementById('mensajeNombreSimilar');
     const btnCrear = document.getElementById('btnCrearHoja');
     
-    const hojasGlobal = window.hojasExistentesGlobal || hojasExistentesGlobal;
-    
-    if (!nombreInput || hojasGlobal.length === 0) {
+    if (!nombreInput || window.hojasExistentesGlobal.length === 0) {
       advertenciaDiv.classList.add('hidden');
       btnCrear.disabled = false;
       return;
@@ -883,7 +964,7 @@
     const nombreNormalizado = nombreInput.toLowerCase().trim();
     let hojasSimilares = [];
     
-    hojasGlobal.forEach(function(hojaExistente) {
+    window.hojasExistentesGlobal.forEach(function(hojaExistente) {
       const existenteNormalizado = hojaExistente.toLowerCase().trim();
       
       if (existenteNormalizado === nombreNormalizado) {
@@ -917,7 +998,12 @@
 
   function crearHojaNueva() {
     const nombreHoja = document.getElementById('nombreNuevaHoja').value.trim();
-    const urlActual = window.currentSheetUrl || currentSheetUrl;
+    const urlActual = recuperarSheetUrl();
+    
+    if (!urlActual) {
+      mostrarToast('Error: No hay Sheet conectado', 'error');
+      return;
+    }
     
     if (!nombreHoja) {
       mostrarToast('Ingresa un nombre para la hoja', 'warning');
@@ -969,9 +1055,7 @@
     const soloFlujoCritico = document.getElementById('filtroFlujoCritico').checked;
     const soloCandidatosRegresion = document.getElementById('filtroCandidatosRegresion').checked;
 
-    const casosGlobales = window.casosActuales || casosActuales;
-    
-    window.casosFiltrados = casosGlobales.filter(function(caso) {
+    window.casosFiltrados = window.casosActuales.filter(function(caso) {
       if (busqueda && busqueda !== '') {
         const titulo = (caso.Titulo || '').toLowerCase();
         const descripcion = (caso.Descripcion || '').toLowerCase();
@@ -1009,13 +1093,12 @@
       return true;
     });
 
-    casosFiltrados = window.casosFiltrados;
-    renderizarTablaCasos(casosFiltrados);
+    renderizarTablaCasos(window.casosFiltrados);
   }
 
   function verDetalleCaso(casoId) {
     alert('Detalle de caso: ' + casoId + '\n\nEsta funcionalidad se implementará en el próximo sprint.');
   }
 
-  console.log('✅ Frontend Components Casos cargado correctamente');
+  console.log('✅ Frontend Components Casos CORREGIDO cargado');
 </script>
