@@ -592,7 +592,7 @@ function eliminarCaso(sheetUrl, casoId) {
  * @param {string} nombreHoja - Nombre de la nueva hoja
  * @returns {Object} Resultado de la operación
  */
-function crearNuevaHoja(sheetUrl, nombreHoja) {
+function crearNuevaHojaReal(sheetUrl, nombreHoja) {
   try {
     Logger.log('Creando nueva hoja: ' + nombreHoja);
     
