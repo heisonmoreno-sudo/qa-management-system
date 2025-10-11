@@ -74,7 +74,7 @@ function verificarConfiguracionSheet(sheetUrl) {
  * @param {string} sheetUrl - URL del Google Sheet
  * @returns {Object} Resultado de la configuración
  */
-function configurarWorkspace(sheetUrl) {
+function configurarWorkspaceReal(sheetUrl) {
   try {
     Logger.log('Iniciando configuracion de workspace: ' + sheetUrl);
     
