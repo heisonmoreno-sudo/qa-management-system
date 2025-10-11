@@ -74,7 +74,7 @@ function verificarConfiguracionSheet(sheetUrl) {
  * @param {string} sheetUrl - URL del Google Sheet
  * @returns {Object} Resultado de la configuración
  */
-function configurarWorkspaceReal(sheetUrl) {
+function configurarWorkspace(sheetUrl) {
   try {
     Logger.log('Iniciando configuracion de workspace: ' + sheetUrl);
     
@@ -463,7 +463,7 @@ function generarNombreUnico(nombreBase) {
  * @param {string} nombreWorkspace - Nombre del workspace
  * @returns {Object} URL y detalles del nuevo Sheet
  */
-function crearNuevoWorkspaceReal(nombreWorkspace) {
+function crearNuevoWorkspace(nombreWorkspace) {
   try {
     Logger.log('Creando nuevo workspace: ' + nombreWorkspace);
     
