@@ -1,25 +1,19 @@
-// ===================================================================
+/ ===================================================================
 // BACKEND_SERVICES_CASOS.GS
 // Servicio para gestión de casos de prueba
-// VERSIÓN CORREGIDA: Con serialización de objetos para el frontend
+// VERSIÓN 3.0: IDs simplificados + Mover casos entre hojas
 // ===================================================================
 
 /**
  * Lista casos de prueba con filtros opcionales
- * @param {string} sheetUrl - URL del Google Sheet
- * @param {Object} filtros - Objeto con filtros (opcional)
- * @returns {Object} Lista de casos
  */
 function listarCasos(sheetUrl, filtros) {
-  // LOGS INICIALES PARA DEBUG
   Logger.log('════════════════════════════════════');
   Logger.log('🔵 listarCasos EJECUTÁNDOSE');
   Logger.log('🔵 URL recibida: ' + sheetUrl);
-  Logger.log('🔵 Tipo de sheetUrl: ' + typeof sheetUrl);
   Logger.log('🔵 Filtros: ' + JSON.stringify(filtros));
   Logger.log('════════════════════════════════════');
   
-  // VALIDACIÓN CRÍTICA PRIMERO
   if (!sheetUrl || sheetUrl === '' || sheetUrl === null || sheetUrl === undefined) {
     Logger.log('❌ CRITICAL: sheetUrl es inválida');
     return {
@@ -30,11 +24,6 @@ function listarCasos(sheetUrl, filtros) {
   }
   
   try {
-    Logger.log('=== INICIO listarCasos ===');
-    Logger.log('URL recibida: ' + sheetUrl);
-    Logger.log('Filtros recibidos: ' + JSON.stringify(filtros));
-    
-    // INTENTAR abrir el spreadsheet
     var spreadsheet;
     try {
       spreadsheet = SpreadsheetApp.openByUrl(sheetUrl);
@@ -49,43 +38,34 @@ function listarCasos(sheetUrl, filtros) {
     
     var todosCasos = [];
     
-    // Si excluirRegresiones es true, obtener casos de todas las hojas excepto Regresiones
     if (filtros && filtros.excluirRegresiones) {
-      
       Logger.log('Modo: Cargar TODOS los casos (excepto Regresiones)');
       
-      // Obtener todas las hojas del spreadsheet
       var todasLasHojas = spreadsheet.getSheets();
       Logger.log('Total de hojas en el Sheet: ' + todasLasHojas.length);
       
-      // Hojas del sistema que no deben incluirse en la búsqueda de casos
       var hojasExcluidas = ['Config', 'Bugs', 'Ejecuciones', 'Regresiones'];
       
       todasLasHojas.forEach(function(hoja) {
         var nombreHoja = hoja.getName();
         
-        // Si no es una hoja excluida, buscar casos
         if (hojasExcluidas.indexOf(nombreHoja) === -1) {
           Logger.log('Revisando hoja: ' + nombreHoja);
           
           var datos = hoja.getDataRange().getValues();
           
-          // Verificar que tenga datos y headers correctos
           if (datos.length > 1) {
             var headers = datos[0];
-            
-            // Verificar que sea una hoja de casos (tiene columna ID)
             var indexID = headers.indexOf('ID');
+            
             if (indexID > -1) {
               Logger.log('✅ Hoja de casos detectada: ' + nombreHoja + ' (tiene ' + (datos.length - 1) + ' filas)');
               
-              // Convertir filas a objetos
               for (var i = 1; i < datos.length; i++) {
                 var caso = {};
                 for (var j = 0; j < headers.length; j++) {
                   var valor = datos[i][j];
                   
-                  // CRÍTICO: Convertir Dates a strings para serialización
                   if (valor instanceof Date) {
                     caso[headers[j]] = valor.toISOString();
                   } else {
@@ -93,31 +73,22 @@ function listarCasos(sheetUrl, filtros) {
                   }
                 }
                 
-                // Si no tiene hoja especificada, usar el nombre de la hoja actual
                 if (!caso.Hoja || caso.Hoja === '') {
                   caso.Hoja = nombreHoja;
                 }
                 
-                // Solo agregar si tiene ID válido
                 if (caso.ID && caso.ID !== '') {
                   todosCasos.push(caso);
                 }
               }
-            } else {
-              Logger.log('ℹ️ Hoja "' + nombreHoja + '" ignorada (no tiene columna ID)');
             }
-          } else {
-            Logger.log('ℹ️ Hoja "' + nombreHoja + '" está vacía');
           }
-        } else {
-          Logger.log('⏭️ Hoja "' + nombreHoja + '" excluida (hoja del sistema)');
         }
       });
       
       Logger.log('📊 Total de casos encontrados: ' + todosCasos.length);
       
     } else {
-      // Comportamiento original: solo de hoja Casos
       Logger.log('Modo: Cargar solo desde hoja "Casos"');
       
       var hojaCasos = spreadsheet.getSheetByName('Casos');
@@ -146,13 +117,11 @@ function listarCasos(sheetUrl, filtros) {
       
       var headers = datos[0];
       
-      // Convertir filas a objetos
       for (var i = 1; i < datos.length; i++) {
         var caso = {};
         for (var j = 0; j < headers.length; j++) {
           var valor = datos[i][j];
           
-          // CRÍTICO: Convertir Dates a strings
           if (valor instanceof Date) {
             caso[headers[j]] = valor.toISOString();
           } else {
@@ -165,7 +134,15 @@ function listarCasos(sheetUrl, filtros) {
       Logger.log('Casos encontrados en hoja "Casos": ' + todosCasos.length);
     }
     
-    // Aplicar filtros adicionales si existen
+    // Excluir casos eliminados por defecto
+    if (!filtros || !filtros.incluirEliminados) {
+      var casosAntesExcluir = todosCasos.length;
+      todosCasos = todosCasos.filter(function(caso) {
+        return caso.Estado !== 'Eliminado';
+      });
+      Logger.log('Casos después de excluir eliminados: ' + todosCasos.length + ' (antes: ' + casosAntesExcluir + ')');
+    }
+    
     if (filtros) {
       var casosAntesFiltros = todosCasos.length;
       todosCasos = aplicarFiltrosCasos(todosCasos, filtros);
@@ -174,7 +151,6 @@ function listarCasos(sheetUrl, filtros) {
     
     Logger.log('=== FIN listarCasos - ÉXITO ===');
     
-    // CRÍTICO: Crear objeto limpio y serializable
     var resultado = {
       success: true,
       data: {
@@ -183,7 +159,6 @@ function listarCasos(sheetUrl, filtros) {
       }
     };
     
-    // Serializar y deserializar para limpiar objetos complejos
     try {
       var resultadoLimpio = JSON.parse(JSON.stringify(resultado));
       Logger.log('📤 Retornando al frontend: ' + resultadoLimpio.data.total + ' casos');
@@ -262,7 +237,326 @@ function aplicarFiltrosCasos(casos, filtros) {
 }
 
 /**
+ * Obtiene detalle completo de un caso específico
+ */
+function obtenerDetalleCaso(sheetUrl, casoId) {
+  try {
+    Logger.log('🔍 Obteniendo detalle de caso: ' + casoId);
+    
+    var spreadsheet = SpreadsheetApp.openByUrl(sheetUrl);
+    var hojasExcluidas = ['Config', 'Bugs', 'Ejecuciones', 'Regresiones'];
+    var todasLasHojas = spreadsheet.getSheets();
+    
+    for (var h = 0; h < todasLasHojas.length; h++) {
+      var hoja = todasLasHojas[h];
+      var nombreHoja = hoja.getName();
+      
+      if (hojasExcluidas.indexOf(nombreHoja) > -1) {
+        continue;
+      }
+      
+      var datos = hoja.getDataRange().getValues();
+      if (datos.length <= 1) continue;
+      
+      var headers = datos[0];
+      var indexID = headers.indexOf('ID');
+      
+      if (indexID === -1) continue;
+      
+      for (var i = 1; i < datos.length; i++) {
+        if (datos[i][indexID] === casoId) {
+          var caso = {};
+          for (var j = 0; j < headers.length; j++) {
+            var valor = datos[i][j];
+            
+            if (valor instanceof Date) {
+              caso[headers[j]] = valor.toISOString();
+            } else {
+              caso[headers[j]] = valor;
+            }
+          }
+          
+          Logger.log('✅ Caso encontrado en hoja: ' + nombreHoja);
+          
+          return {
+            success: true,
+            data: caso
+          };
+        }
+      }
+    }
+    
+    Logger.log('❌ Caso no encontrado: ' + casoId);
+    return {
+      success: false,
+      mensaje: 'Caso no encontrado'
+    };
+    
+  } catch (error) {
+    Logger.log('❌ Error obteniendo caso: ' + error.toString());
+    return {
+      success: false,
+      mensaje: 'Error al obtener caso: ' + error.message
+    };
+  }
+}
+
+/**
+ * Actualiza un caso existente
+ */
+function actualizarCaso(sheetUrl, casoId, datosActualizados) {
+  try {
+    Logger.log('✏️ Actualizando caso: ' + casoId);
+    Logger.log('Datos a actualizar: ' + JSON.stringify(datosActualizados));
+    
+    var spreadsheet = SpreadsheetApp.openByUrl(sheetUrl);
+    var hojasExcluidas = ['Config', 'Bugs', 'Ejecuciones', 'Regresiones'];
+    var todasLasHojas = spreadsheet.getSheets();
+    
+    for (var h = 0; h < todasLasHojas.length; h++) {
+      var hoja = todasLasHojas[h];
+      var nombreHoja = hoja.getName();
+      
+      if (hojasExcluidas.indexOf(nombreHoja) > -1) {
+        continue;
+      }
+      
+      var datos = hoja.getDataRange().getValues();
+      if (datos.length <= 1) continue;
+      
+      var headers = datos[0];
+      var indexID = headers.indexOf('ID');
+      
+      if (indexID === -1) continue;
+      
+      for (var i = 1; i < datos.length; i++) {
+        if (datos[i][indexID] === casoId) {
+          
+          Logger.log('✅ Caso encontrado en hoja: ' + nombreHoja + ', fila: ' + (i + 1));
+          
+          for (var campo in datosActualizados) {
+            var colIndex = headers.indexOf(campo);
+            if (colIndex > -1) {
+              var valor = datosActualizados[campo];
+              
+              if (campo.indexOf('Fecha') > -1 && typeof valor === 'string') {
+                try {
+                  valor = new Date(valor);
+                } catch (e) {
+                  // Mantener como string si falla
+                }
+              }
+              
+              hoja.getRange(i + 1, colIndex + 1).setValue(valor);
+              Logger.log('  ✓ Campo actualizado: ' + campo + ' = ' + valor);
+            }
+          }
+          
+          Logger.log('✅ Caso actualizado exitosamente');
+          
+          return {
+            success: true,
+            mensaje: 'Caso actualizado exitosamente'
+          };
+        }
+      }
+    }
+    
+    Logger.log('❌ Caso no encontrado: ' + casoId);
+    return {
+      success: false,
+      mensaje: 'Caso no encontrado'
+    };
+    
+  } catch (error) {
+    Logger.log('❌ Error actualizando caso: ' + error.toString());
+    return {
+      success: false,
+      mensaje: 'Error al actualizar caso: ' + error.message
+    };
+  }
+}
+
+/**
+ * NUEVA FUNCIÓN: Mueve un caso de una hoja a otra
+ * Mantiene el ID pero cambia la ubicación física
+ */
+function moverCaso(sheetUrl, casoId, hojaDestino) {
+  try {
+    Logger.log('📦 Moviendo caso ' + casoId + ' a hoja: ' + hojaDestino);
+    
+    var spreadsheet = SpreadsheetApp.openByUrl(sheetUrl);
+    
+    // 1. Buscar el caso en todas las hojas
+    var casoCompleto = buscarCasoEnTodasLasHojas(spreadsheet, casoId);
+    
+    if (!casoCompleto) {
+      Logger.log('❌ Caso no encontrado');
+      return {
+        success: false,
+        mensaje: 'Caso no encontrado'
+      };
+    }
+    
+    var hojaOrigen = casoCompleto.hoja;
+    var filaCaso = casoCompleto.fila;
+    var datosCaso = casoCompleto.datos;
+    
+    Logger.log('Caso encontrado en hoja: ' + hojaOrigen.getName() + ', fila: ' + filaCaso);
+    
+    // 2. Verificar que hoja destino existe
+    var hojaDestinoSheet = spreadsheet.getSheetByName(hojaDestino);
+    
+    if (!hojaDestinoSheet) {
+      Logger.log('❌ Hoja destino no existe');
+      return {
+        success: false,
+        mensaje: 'La hoja destino "' + hojaDestino + '" no existe'
+      };
+    }
+    
+    // 3. No mover si ya está en la hoja destino
+    if (hojaOrigen.getName() === hojaDestino) {
+      Logger.log('⚠️ El caso ya está en la hoja destino');
+      return {
+        success: false,
+        mensaje: 'El caso ya está en la hoja "' + hojaDestino + '"'
+      };
+    }
+    
+    // 4. Actualizar campo "Hoja" en los datos
+    var headers = hojaOrigen.getRange(1, 1, 1, hojaOrigen.getLastColumn()).getValues()[0];
+    var indexHoja = headers.indexOf('Hoja');
+    var indexNotas = headers.indexOf('Notas');
+    
+    if (indexHoja > -1) {
+      datosCaso[indexHoja] = hojaDestino;
+    }
+    
+    // 5. Agregar nota de movimiento
+    if (indexNotas > -1) {
+      var notaAnterior = datosCaso[indexNotas] || '';
+      var fecha = new Date().toLocaleDateString('es-ES');
+      var notaMovimiento = 'Movido desde "' + hojaOrigen.getName() + '" el ' + fecha;
+      datosCaso[indexNotas] = notaAnterior ? notaAnterior + ' | ' + notaMovimiento : notaMovimiento;
+    }
+    
+    // 6. Copiar caso a hoja destino
+    hojaDestinoSheet.appendRow(datosCaso);
+    Logger.log('✓ Caso copiado a hoja destino');
+    
+    // 7. Eliminar caso de hoja origen
+    hojaOrigen.deleteRow(filaCaso);
+    Logger.log('✓ Caso eliminado de hoja origen');
+    
+    Logger.log('✅ Caso movido exitosamente');
+    
+    return {
+      success: true,
+      mensaje: 'Caso movido exitosamente de "' + hojaOrigen.getName() + '" a "' + hojaDestino + '"',
+      data: {
+        casoId: casoId,
+        hojaOrigen: hojaOrigen.getName(),
+        hojaDestino: hojaDestino
+      }
+    };
+    
+  } catch (error) {
+    Logger.log('❌ Error moviendo caso: ' + error.toString());
+    return {
+      success: false,
+      mensaje: 'Error al mover caso: ' + error.message
+    };
+  }
+}
+
+/**
+ * Busca un caso en todas las hojas y retorna su ubicación
+ */
+function buscarCasoEnTodasLasHojas(spreadsheet, casoId) {
+  var hojasExcluidas = ['Config', 'Bugs', 'Ejecuciones', 'Regresiones'];
+  var todasLasHojas = spreadsheet.getSheets();
+  
+  for (var h = 0; h < todasLasHojas.length; h++) {
+    var hoja = todasLasHojas[h];
+    
+    if (hojasExcluidas.indexOf(hoja.getName()) > -1) {
+      continue;
+    }
+    
+    var datos = hoja.getDataRange().getValues();
+    if (datos.length <= 1) continue;
+    
+    var headers = datos[0];
+    var indexID = headers.indexOf('ID');
+    
+    if (indexID === -1) continue;
+    
+    for (var i = 1; i < datos.length; i++) {
+      if (datos[i][indexID] === casoId) {
+        return {
+          hoja: hoja,
+          fila: i + 1,
+          datos: datos[i]
+        };
+      }
+    }
+  }
+  
+  return null;
+}
+
+/**
+ * Elimina un caso (soft delete)
+ */
+function eliminarCaso(sheetUrl, casoId) {
+  try {
+    Logger.log('🗑️ Eliminando caso (soft delete): ' + casoId);
+    
+    var usuario = Session.getActiveUser().getEmail();
+    var fechaEliminacion = new Date().toISOString();
+    
+    return actualizarCaso(sheetUrl, casoId, {
+      Estado: 'Eliminado',
+      Notas: 'Eliminado el ' + fechaEliminacion + ' por ' + usuario
+    });
+    
+  } catch (error) {
+    Logger.log('❌ Error eliminando caso: ' + error.toString());
+    return {
+      success: false,
+      mensaje: 'Error al eliminar caso: ' + error.message
+    };
+  }
+}
+
+/**
+ * Restaura un caso eliminado
+ */
+function restaurarCaso(sheetUrl, casoId) {
+  try {
+    Logger.log('↩️ Restaurando caso: ' + casoId);
+    
+    var usuario = Session.getActiveUser().getEmail();
+    var fechaRestauracion = new Date().toISOString();
+    
+    return actualizarCaso(sheetUrl, casoId, {
+      Estado: 'Pendiente',
+      Notas: 'Restaurado el ' + fechaRestauracion + ' por ' + usuario
+    });
+    
+  } catch (error) {
+    Logger.log('❌ Error restaurando caso: ' + error.toString());
+    return {
+      success: false,
+      mensaje: 'Error al restaurar caso: ' + error.message
+    };
+  }
+}
+
+/**
  * Crea un nuevo caso de prueba
+ * ACTUALIZADO: IDs simplificados sin prefijo de hoja
  */
 function crearCaso(datosCaso) {
   try {
@@ -287,13 +581,14 @@ function crearCaso(datosCaso) {
       };
     }
     
-    var nuevoId = generarIdCaso(hojaConfig, nombreHojaDestino);
+    // CAMBIO: ID simplificado
+    var nuevoId = generarIdCasoSimplificado(hojaConfig);
     var casoURI = generarCasoURI(spreadsheet.getId(), nuevoId);
     var usuario = Session.getActiveUser().getEmail();
     
     var fila = [
       nuevoId,
-      datosCaso.hoja,
+      nombreHojaDestino,
       datosCaso.titulo,
       datosCaso.descripcion,
       datosCaso.formatoCaso,
@@ -342,15 +637,17 @@ function crearCaso(datosCaso) {
 }
 
 /**
- * Genera un ID único para el caso según la hoja
+ * NUEVO: Genera ID simplificado (TC-1, TC-2, TC-3...)
+ * Sin prefijo de hoja
  */
-function generarIdCaso(hojaConfig, nombreHoja) {
+function generarIdCasoSimplificado(hojaConfig) {
   try {
     var datos = hojaConfig.getDataRange().getValues();
-    var claveContador = 'ultimo_caso_id_' + nombreHoja;
+    var claveContador = 'ultimo_caso_id_global';
     var ultimoId = 0;
     var filaContador = -1;
     
+    // Buscar contador global
     for (var i = 1; i < datos.length; i++) {
       if (datos[i][0] === claveContador) {
         ultimoId = parseInt(datos[i][1]) || 0;
@@ -359,39 +656,25 @@ function generarIdCaso(hojaConfig, nombreHoja) {
       }
     }
     
+    // Si no existe contador global, crearlo
     if (filaContador === -1) {
-      hojaConfig.appendRow([claveContador, 1, 'Contador de casos para hoja ' + nombreHoja]);
+      hojaConfig.appendRow([claveContador, 1, 'Contador global de casos (IDs simplificados)']);
       ultimoId = 0;
     } else {
+      // Actualizar contador existente
       hojaConfig.getRange(filaContador, 2).setValue(ultimoId + 1);
     }
     
     var nuevoNumero = ultimoId + 1;
-    var prefijo = obtenerPrefijoHoja(nombreHoja);
     
-    return prefijo + '-TC-' + nuevoNumero;
+    // Formato simplificado: TC-1, TC-2, TC-3...
+    return 'TC-' + nuevoNumero;
     
   } catch (error) {
     Logger.log('Error generando ID: ' + error.toString());
+    // Fallback: usar timestamp
     return 'TC-' + new Date().getTime();
   }
-}
-
-/**
- * Obtiene prefijo de la hoja para los IDs
- */
-function obtenerPrefijoHoja(nombreHoja) {
-  if (!nombreHoja || nombreHoja === 'Casos') {
-    return 'QA';
-  }
-  
-  var prefijo = nombreHoja.toUpperCase().replace(/\s+/g, '');
-  
-  if (prefijo.length > 10) {
-    prefijo = prefijo.substring(0, 10);
-  }
-  
-  return prefijo;
 }
 
 /**
@@ -431,126 +714,6 @@ function obtenerHojasDisponibles(sheetUrl) {
     return {
       success: false,
       mensaje: 'Error al obtener hojas: ' + error.message
-    };
-  }
-}
-
-/**
- * Obtiene detalle completo de un caso
- */
-function obtenerDetalleCaso(sheetUrl, casoId) {
-  try {
-    Logger.log('Obteniendo detalle de caso: ' + casoId);
-    
-    var spreadsheet = SpreadsheetApp.openByUrl(sheetUrl);
-    var hojaCasos = spreadsheet.getSheetByName('Casos');
-    
-    if (hojaCasos === null) {
-      return {
-        success: false,
-        mensaje: 'No se encontró la hoja de Casos'
-      };
-    }
-    
-    var datos = hojaCasos.getDataRange().getValues();
-    var headers = datos[0];
-    
-    for (var i = 1; i < datos.length; i++) {
-      if (datos[i][0] === casoId) {
-        var caso = {};
-        for (var j = 0; j < headers.length; j++) {
-          caso[headers[j]] = datos[i][j];
-        }
-        
-        return {
-          success: true,
-          data: caso
-        };
-      }
-    }
-    
-    return {
-      success: false,
-      mensaje: 'Caso no encontrado'
-    };
-    
-  } catch (error) {
-    Logger.log('Error obteniendo caso: ' + error.toString());
-    return {
-      success: false,
-      mensaje: 'Error al obtener caso: ' + error.message
-    };
-  }
-}
-
-/**
- * Actualiza un caso existente
- */
-function actualizarCaso(sheetUrl, casoId, datosActualizados) {
-  try {
-    Logger.log('Actualizando caso: ' + casoId);
-    
-    var spreadsheet = SpreadsheetApp.openByUrl(sheetUrl);
-    var hojaCasos = spreadsheet.getSheetByName('Casos');
-    
-    if (hojaCasos === null) {
-      return {
-        success: false,
-        mensaje: 'No se encontró la hoja de Casos'
-      };
-    }
-    
-    var datos = hojaCasos.getDataRange().getValues();
-    var headers = datos[0];
-    
-    for (var i = 1; i < datos.length; i++) {
-      if (datos[i][0] === casoId) {
-        
-        for (var campo in datosActualizados) {
-          var colIndex = headers.indexOf(campo);
-          if (colIndex > -1) {
-            hojaCasos.getRange(i + 1, colIndex + 1).setValue(datosActualizados[campo]);
-          }
-        }
-        
-        return {
-          success: true,
-          mensaje: 'Caso actualizado exitosamente'
-        };
-      }
-    }
-    
-    return {
-      success: false,
-      mensaje: 'Caso no encontrado'
-    };
-    
-  } catch (error) {
-    Logger.log('Error actualizando caso: ' + error.toString());
-    return {
-      success: false,
-      mensaje: 'Error al actualizar caso: ' + error.message
-    };
-  }
-}
-
-/**
- * Elimina un caso
- */
-function eliminarCaso(sheetUrl, casoId) {
-  try {
-    Logger.log('Eliminando caso: ' + casoId);
-    
-    return actualizarCaso(sheetUrl, casoId, {
-      Estado: 'Eliminado',
-      Notas: 'Eliminado el ' + new Date().toISOString()
-    });
-    
-  } catch (error) {
-    Logger.log('Error eliminando caso: ' + error.toString());
-    return {
-      success: false,
-      mensaje: 'Error al eliminar caso: ' + error.message
     };
   }
 }
@@ -615,31 +778,4 @@ function crearNuevaHoja(sheetUrl, nombreHoja) {
       mensaje: 'Error al crear hoja: ' + error.message
     };
   }
-}
-
-/**
- * Función de TEST
- */
-function testListarCasos() {
-  var url = "https://docs.google.com/spreadsheets/d/1mrB6k8ZnUxwNedc67GHA9h9ECAYv-XKHXVWgd5qzhCg/edit?gid=1755706280#gid=1755706280";
-  
-  Logger.log("=== TEST DE LISTAR CASOS ===");
-  Logger.log("Probando con URL: " + url);
-  
-  try {
-    var resultado = listarCasos(url, { excluirRegresiones: true });
-    Logger.log("✅ RESULTADO: " + JSON.stringify(resultado, null, 2));
-    
-    if (resultado.success) {
-      Logger.log("✅ TEST EXITOSO - Casos encontrados: " + resultado.data.total);
-    } else {
-      Logger.log("❌ TEST FALLÓ - Mensaje: " + resultado.mensaje);
-    }
-    
-  } catch (error) {
-    Logger.log("💥 ERROR EN TEST: " + error.toString());
-    Logger.log("Stack: " + error.stack);
-  }
-  
-  Logger.log("=== FIN TEST ===");
 }
