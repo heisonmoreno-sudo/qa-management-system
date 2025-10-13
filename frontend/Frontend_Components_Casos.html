@@ -490,6 +490,7 @@
     if (!window.formularioTieneCambios) window.formularioTieneCambios = false;
     if (!window.casoActualDetalle) window.casoActualDetalle = null;
     if (!window.mostrarEliminados) window.mostrarEliminados = false;
+    if (!window.hojaRecienCreada) window.hojaRecienCreada = null;
     
     console.log('✅ Variables globales de Casos inicializadas');
   })();
@@ -654,38 +655,43 @@
   // CARGAR DATOS
   // ===================================================================
 
-  function cargarHojasDisponibles() {
-    const urlActual = recuperarSheetUrl();
-    
-    if (!urlActual) {
-      mostrarToast('Error: No hay Sheet conectado', 'error');
-      return;
-    }
-
-    google.script.run
-      .withSuccessHandler(function(response) {
-        if (response.success) {
-          const selectHoja = document.getElementById('casoHoja');
-          const selectFiltro = document.getElementById('filtroHoja');
-          
-          selectHoja.innerHTML = '<option value="">Usar hoja "Casos" (default)</option>';
-          selectFiltro.innerHTML = '<option value="Todas">Todas las hojas</option>';
-          
-          selectFiltro.innerHTML += '<option value="Casos">Casos</option>';
-          
-          response.data.hojas.forEach(function(hoja) {
-            selectHoja.innerHTML += '<option value="' + hoja + '">' + hoja + '</option>';
-            selectFiltro.innerHTML += '<option value="' + hoja + '">' + hoja + '</option>';
-          });
-          
-          selectHoja.innerHTML += '<option value="_nueva">➕ Crear nueva hoja</option>';
-        }
-      })
-      .withFailureHandler(function(error) {
-        mostrarToast('Error al cargar hojas: ' + error.message, 'error');
-      })
-      .obtenerHojasDisponibles(urlActual);
+  function cargarHojasDisponibles(callback) {
+  const urlActual = recuperarSheetUrl();
+  
+  if (!urlActual) {
+    mostrarToast('Error: No hay Sheet conectado', 'error');
+    return;
   }
+
+  google.script.run
+    .withSuccessHandler(function(response) {
+      if (response.success) {
+        const selectHoja = document.getElementById('casoHoja');
+        const selectFiltro = document.getElementById('filtroHoja');
+        
+        selectHoja.innerHTML = '<option value="">Usar hoja "Casos" (default)</option>';
+        selectFiltro.innerHTML = '<option value="Todas">Todas las hojas</option>';
+        
+        selectFiltro.innerHTML += '<option value="Casos">Casos</option>';
+        
+        response.data.hojas.forEach(function(hoja) {
+          selectHoja.innerHTML += '<option value="' + hoja + '">' + hoja + '</option>';
+          selectFiltro.innerHTML += '<option value="' + hoja + '">' + hoja + '</option>';
+        });
+        
+        selectHoja.innerHTML += '<option value="_nueva">➕ Crear nueva hoja</option>';
+        
+        // NUEVO: Ejecutar callback si existe
+        if (callback && typeof callback === 'function') {
+          callback();
+        }
+      }
+    })
+    .withFailureHandler(function(error) {
+      mostrarToast('Error al cargar hojas: ' + error.message, 'error');
+    })
+    .obtenerHojasDisponibles(urlActual);
+}
 
   function toggleMostrarEliminados() {
     window.mostrarEliminados = document.getElementById('filtroMostrarEliminados').checked;
@@ -997,40 +1003,48 @@
   console.log('📂 Hoja original del caso:', hojaOriginal);
   
   // CUARTO: Esperar a que el DOM esté listo y llenar campos
+// CUARTO: Esperar a que el DOM esté listo y llenar campos
   setTimeout(() => {
     try {
       // ═══════════════════════════════════════════════════════════
-      // FIX 1: Asegurar que el select tenga la opción correcta
+      // FIX: Asegurar que el select tenga la opción correcta
       // ═══════════════════════════════════════════════════════════
       const selectHoja = document.getElementById('casoHoja');
       if (selectHoja) {
+        console.log('📋 Opciones disponibles en select:', Array.from(selectHoja.options).map(o => o.value));
+        console.log('📂 Hoja a seleccionar:', hojaOriginal);
+        
         // Buscar si la hoja existe en el select
         let hojaEncontrada = false;
         
         for (let i = 0; i < selectHoja.options.length; i++) {
           if (selectHoja.options[i].value === hojaOriginal) {
             hojaEncontrada = true;
+            console.log('✅ Hoja encontrada en select en posición:', i);
             break;
           }
         }
         
         // Si la hoja no está en el select, agregarla temporalmente
-        if (!hojaEncontrada && hojaOriginal !== '') {
+        if (!hojaEncontrada && hojaOriginal !== '' && hojaOriginal !== 'Casos') {
           const option = document.createElement('option');
           option.value = hojaOriginal;
           option.textContent = hojaOriginal;
           selectHoja.insertBefore(option, selectHoja.options[1]); // Insertar después de "Casos (default)"
-          console.log('➕ Hoja agregada al select:', hojaOriginal);
+          console.log('➕ Hoja agregada temporalmente al select:', hojaOriginal);
         }
         
         // Ahora sí seleccionar la hoja
         if (hojaOriginal === 'Casos' || hojaOriginal === '') {
           selectHoja.value = ''; // Opción "Usar hoja Casos (default)"
+          console.log('📋 Seleccionado: Casos (default)');
         } else {
           selectHoja.value = hojaOriginal;
+          console.log('📋 Seleccionado:', hojaOriginal);
         }
         
-        console.log('✅ Hoja seleccionada en desplegable:', selectHoja.value || 'Casos (default)');
+        // Verificar que realmente se seleccionó
+        console.log('✅ Valor actual del select:', selectHoja.value || '(vacío = Casos default)');
       }
       
       // Formato
@@ -1092,8 +1106,8 @@
       console.error('❌ Error llenando formulario:', error);
       mostrarToast('Error al cargar datos del caso', 'error');
     }
-  }, 150); // Aumentado a 150ms para asegurar que el DOM esté listo
-}
+  }, 150);
+  }  
 
   function marcarCambios() {
     window.formularioTieneCambios = true;
@@ -1213,9 +1227,22 @@
 
   async function cerrarModalCaso() {
   if (window.formularioTieneCambios) {
+    // Verificar si hay una hoja recién creada en esta sesión
+    let mensajeCompleto = 'Tienes cambios sin guardar.<br><br>¿Deseas descartar los cambios y cerrar?';
+    
+    // Si había una hoja recién creada, mostrar toast informativo
+if (window.hojaRecienCreada) {
+  const nombreHojaTemp = window.hojaRecienCreada; // ← Guardar en variable temporal
+  window.hojaRecienCreada = null; // ← Limpiar inmediatamente
+  
+  setTimeout(() => {
+    mostrarToast('💡 La hoja "' + nombreHojaTemp + '" quedó guardada en tu Google Sheet', 'info', 4000);
+  }, 500);
+}
+    
     const confirmar = await mostrarConfirmacionApp({
       titulo: 'Cambios sin guardar',
-      mensaje: 'Tienes cambios sin guardar.<br><br>¿Deseas descartar los cambios y cerrar?',
+      mensaje: mensajeCompleto,
       icono: '⚠️',
       textoOk: 'Descartar cambios',
       textoCancelar: 'Seguir editando'
@@ -1225,13 +1252,21 @@
       // Usuario eligió "Descartar cambios"
       cerrarModal('modalCrearCaso');
       window.formularioTieneCambios = false;
+      
+      // Limpiar formulario
       document.getElementById('formCrearCaso').reset();
       document.getElementById('casoIdEdicion').value = '';
       document.getElementById('casoHojaOriginal').value = '';
       document.getElementById('tituloModalCaso').textContent = '➕ Nuevo Caso de Prueba';
+      
+      // Si había una hoja recién creada, mostrar toast informativo
+      if (window.hojaRecienCreada) {
+        setTimeout(() => {
+          mostrarToast('💡 La hoja "' + window.hojaRecienCreada + '" quedó guardada en tu Google Sheet', 'info', 4000);
+        }, 500);
+        window.hojaRecienCreada = null;
+      }
     }
-    // Si confirmar === false (usuario eligió "Seguir editando"), NO hacer nada
-    // El modal permanece abierto
   } else {
     // No hay cambios, cerrar directamente
     cerrarModal('modalCrearCaso');
@@ -1239,6 +1274,11 @@
     document.getElementById('casoIdEdicion').value = '';
     document.getElementById('casoHojaOriginal').value = '';
     document.getElementById('tituloModalCaso').textContent = '➕ Nuevo Caso de Prueba';
+    
+    // Limpiar referencia si existía
+    if (window.hojaRecienCreada) {
+      window.hojaRecienCreada = null;
+    }
   }
 }
 
@@ -1256,19 +1296,26 @@
     }
   }
 
-  function manejarCambioHoja() {
-    const selectHoja = document.getElementById('casoHoja');
-    const advertencia = document.getElementById('advertenciaHoja');
+function manejarCambioHoja() {
+  const selectHoja = document.getElementById('casoHoja');
+  const advertencia = document.getElementById('advertenciaHoja');
+  
+  if (selectHoja.value === '_nueva') {
+    // Prevenir que el select mantenga "_nueva" seleccionado
+    selectHoja.value = '';
     
-    if (selectHoja.value === '_nueva') {
+    // Abrir modal con un pequeño delay
+    setTimeout(() => {
       abrirModalCrearHoja();
-      advertencia.classList.add('hidden');
-    } else if (selectHoja.value === '') {
-      advertencia.classList.remove('hidden');
-    } else {
-      advertencia.classList.add('hidden');
-    }
+    }, 100);
+    
+    advertencia.classList.add('hidden');
+  } else if (selectHoja.value === '') {
+    advertencia.classList.remove('hidden');
+  } else {
+    advertencia.classList.add('hidden');
   }
+}
 // ===================================================================
   // GUARDAR CASO - CON LÓGICA DE MOVER
   // ===================================================================
@@ -1356,6 +1403,7 @@
                   if (responseActualizar.success) {
                     mostrarToast('✅ Caso movido y actualizado exitosamente', 'success');
                     window.formularioTieneCambios = false;
+                    window.hojaRecienCreada = null; 
                     cerrarModal('modalCrearCaso');
                     cargarTodosLosCasos();
                   } else {
@@ -1397,6 +1445,7 @@
             if (response.success) {
               mostrarToast('✅ Caso actualizado exitosamente', 'success');
               window.formularioTieneCambios = false;
+              window.hojaRecienCreada = null; 
               cerrarModal('modalCrearCaso');
               cargarTodosLosCasos();
             } else {
@@ -1452,6 +1501,8 @@
             mostrarToast(mensaje, 'success');
             
             window.formularioTieneCambios = false;
+            window.hojaRecienCreada = null; 
+            
             cerrarModal('modalCrearCaso');
             cargarTodosLosCasos();
           } else {
@@ -1503,26 +1554,27 @@
   // MODAL CREAR NUEVA HOJA
   // ===================================================================
 
-  function abrirModalCrearHoja() {
-    cerrarModal('modalCrearCaso');
+function abrirModalCrearHoja() {
+  cerrarModal('modalCrearCaso');
+  
+  // Pequeño delay para asegurar transición
+  setTimeout(() => {
     abrirModal('modalCrearHoja');
     document.getElementById('nombreNuevaHoja').value = '';
     document.getElementById('nombreNuevaHoja').focus();
     cargarHojasExistentesEnModal();
-  }
+  }, 150);
+}
 
   function cerrarModalCrearHoja() {
-    cerrarModal('modalCrearHoja');
-    abrirModal('modalCrearCaso');
-    
-    const selectHoja = document.getElementById('casoHoja');
-    if (selectHoja.value === '_nueva') {
-      selectHoja.value = '';
-    }
-    
-    document.getElementById('advertenciaNombreHoja').classList.add('hidden');
-  }
-
+  cerrarModal('modalCrearHoja');
+  abrirModal('modalCrearCaso');
+  
+  // NO resetear el valor del select aquí
+  // La función crearHojaNueva() ya lo maneja
+  
+  document.getElementById('advertenciaNombreHoja').classList.add('hidden');
+}
   function cargarHojasExistentesEnModal() {
     const listaDiv = document.getElementById('listaHojasExistentes');
     const urlActual = recuperarSheetUrl();
@@ -1600,51 +1652,57 @@
   }
 
   function crearHojaNueva() {
-    const nombreHoja = document.getElementById('nombreNuevaHoja').value.trim();
-    const urlActual = recuperarSheetUrl();
-    
-    if (!urlActual) {
-      mostrarToast('Error: No hay Sheet conectado', 'error');
-      return;
-    }
-    
-    if (!nombreHoja) {
-      mostrarToast('Ingresa un nombre para la hoja', 'warning');
-      return;
-    }
-    
-    const btnCrear = document.getElementById('btnCrearHoja');
-    if (btnCrear.disabled) {
-      mostrarToast('Este nombre ya existe. Usa otro nombre.', 'error');
-      return;
-    }
-    
-    mostrarSpinner();
-    
-    google.script.run
-      .withSuccessHandler(function(response) {
-        ocultarSpinner();
-        
-        if (response.success) {
-          mostrarToast('✅ Hoja creada: ' + nombreHoja, 'success');
-          cerrarModalCrearHoja();
-          cargarHojasDisponibles();
-          
-          setTimeout(function() {
-            const selectHoja = document.getElementById('casoHoja');
-            selectHoja.value = nombreHoja;
-          }, 500);
-          
-        } else {
-          mostrarToast('Error: ' + response.mensaje, 'error');
-        }
-      })
-      .withFailureHandler(function(error) {
-        ocultarSpinner();
-        mostrarToast('Error al crear hoja: ' + error.message, 'error');
-      })
-      .crearNuevaHoja(urlActual, nombreHoja);
+  const nombreHoja = document.getElementById('nombreNuevaHoja').value.trim();
+  const urlActual = recuperarSheetUrl();
+  
+  if (!urlActual) {
+    mostrarToast('Error: No hay Sheet conectado', 'error');
+    return;
   }
+  
+  if (!nombreHoja) {
+    mostrarToast('Ingresa un nombre para la hoja', 'warning');
+    return;
+  }
+  
+  const btnCrear = document.getElementById('btnCrearHoja');
+  if (btnCrear.disabled) {
+    mostrarToast('Este nombre ya existe. Usa otro nombre.', 'error');
+    return;
+  }
+  
+  mostrarSpinner();
+  
+  google.script.run
+    .withSuccessHandler(function(response) {
+      ocultarSpinner();
+      
+      if (response.success) {
+        mostrarToast('✅ Hoja creada: ' + nombreHoja, 'success');
+
+  // NUEVO: Marcar que se creó una hoja en esta sesión
+        window.hojaRecienCreada = nombreHoja;
+        
+        // Recargar hojas y CUANDO TERMINE, seleccionar la nueva
+        cargarHojasDisponibles(function() {
+          const selectHoja = document.getElementById('casoHoja');
+          selectHoja.value = nombreHoja;
+          console.log('✅ Hoja seleccionada automáticamente:', nombreHoja);
+          
+          // Cerrar modal DESPUÉS de seleccionar
+          cerrarModalCrearHoja();
+        });
+        
+      } else {
+        mostrarToast('Error: ' + response.mensaje, 'error');
+      }
+    })
+    .withFailureHandler(function(error) {
+      ocultarSpinner();
+      mostrarToast('Error al crear hoja: ' + error.message, 'error');
+    })
+    .crearNuevaHoja(urlActual, nombreHoja);
+}
 
   // ===================================================================
   // FILTROS
