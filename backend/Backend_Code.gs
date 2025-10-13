@@ -1,4 +1,4 @@
-/**
+**
  * ═══════════════════════════════════════════════════════════════════════════
  * BACKEND_CODE.GS
  * Punto de entrada principal del sistema
