@@ -2597,10 +2597,20 @@ function subirArchivoADrive(archivo) {
  * Actualiza el resumen de ejecución con la nueva lógica
  * No cuenta descartados
  */
+/**
+ * Actualiza el resumen de ejecución con la nueva lógica
+ * No cuenta descartados
+ */
+/**
+ * Actualiza el resumen de ejecución con la nueva lógica
+ * No cuenta descartados
+ */
+/**
+ * Actualiza el resumen de ejecución con la nueva lógica
+ */
 function actualizarResumenEjecucion() {
   const urlActual = window.currentSheetUrl || currentSheetUrl;
   
-  // VALIDACIÓN: Asegurar que tenemos URL
   if (!urlActual || urlActual === '') {
     console.error('❌ No hay URL del Sheet para actualizar resumen');
     return;
@@ -2610,35 +2620,57 @@ function actualizarResumenEjecucion() {
   
   google.script.run
     .withSuccessHandler(function(response) {
+      console.log('📦 RESPUESTA COMPLETA DEL BACKEND:', response);
+      
       if (response && response.success) {
         const resumen = response.data;
+        console.log('📊 DATOS DEL RESUMEN:', resumen);
         
-        // Actualizar números
-        document.getElementById('statOk').textContent = resumen.ok || 0;
-        document.getElementById('statNoOk').textContent = resumen.noOk || 0;
-        document.getElementById('statEjecutando').textContent = resumen.ejecutando || 0;
-        document.getElementById('statPendiente').textContent = (resumen.sinEjecutar || 0) + (resumen.bloqueado || 0) + (resumen.descartado || 0);
+        // CRÍTICO: Usar los nombres que devuelve el backend (con 's')
+        const statOk = document.getElementById('statOk');
+        const statNoOk = document.getElementById('statNoOk');
+        const statBloqueado = document.getElementById('statBloqueado');
+        const statSinEjecutar = document.getElementById('statSinEjecutar');
+        const statEjecutando = document.getElementById('statEjecutando');
+        const progressFillOk = document.getElementById('progressFillOk');
+        const progressPercentage = document.getElementById('progressPercentage');
+        const textoProgreso = document.getElementById('textoProgreso');
         
-        // Actualizar barra de progreso
+        // Actualizar números (usar nombres con 's' del backend)
+        if (statOk) statOk.textContent = resumen.ok || 0;
+        if (statNoOk) statNoOk.textContent = resumen.noOk || 0;
+        if (statBloqueado) statBloqueado.textContent = resumen.bloqueados || 0; // ← CON 'S'
+        if (statSinEjecutar) statSinEjecutar.textContent = resumen.sinEjecutar || 0;
+        if (statEjecutando) statEjecutando.textContent = resumen.ejecutando || 0;
+        
+        // Calcular porcentaje
         const total = resumen.total || 1;
         const pctOk = Math.round((resumen.ok / total) * 100);
-        const pctNoOk = Math.round((resumen.noOk / total) * 100);
-        const pctEjecutando = Math.round((resumen.ejecutando / total) * 100);
-        const pctPendiente = 100 - pctOk - pctNoOk - pctEjecutando;
         
-        document.getElementById('progressOk').style.width = pctOk + '%';
-        document.getElementById('progressNoOk').style.width = pctNoOk + '%';
-        document.getElementById('progressEjecutando').style.width = pctEjecutando + '%';
-        document.getElementById('progressPendiente').style.width = pctPendiente + '%';
+        // Actualizar barra
+        if (progressFillOk) {
+          progressFillOk.style.width = pctOk + '%';
+          console.log('✅ Barra actualizada a:', pctOk + '%');
+        }
         
-        console.log('✅ Resumen actualizado:', resumen);
+        // Actualizar textos
+        if (progressPercentage) {
+          progressPercentage.textContent = pctOk + '%';
+        }
+        
+        if (textoProgreso) {
+          textoProgreso.textContent = 'Hay ' + (resumen.ok || 0) + ' casos OK de ' + total;
+        }
+        
+        console.log('✅ Resumen actualizado correctamente');
+      } else {
+        console.error('❌ Response no exitoso:', response);
       }
     })
     .withFailureHandler(function(error) {
       console.error('❌ Error actualizando resumen:', error);
     })
-    .obtenerResumenEjecucion(urlActual); // ← USAR urlActual DIRECTAMENTE
+    .obtenerResumenEjecucion(urlActual);
 }
-
   console.log('✅ Frontend Components Casos v3.0 COMPLETO cargado');
 </script>
