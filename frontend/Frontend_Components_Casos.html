@@ -2598,69 +2598,46 @@ function subirArchivoADrive(archivo) {
  * No cuenta descartados
  */
 function actualizarResumenEjecucion() {
-  const urlActual = recuperarSheetUrl();
+  const urlActual = window.currentSheetUrl || currentSheetUrl;
   
-  // ← AGREGAR ESTE LOG
-  console.log('🔍 actualizarResumenEjecucion - URL recuperada:', urlActual);
-  console.log('   Tipo:', typeof urlActual);
-  console.log('   Es null?:', urlActual === null);
-  console.log('   Es vacío?:', urlActual === '');
-  
-  if (!urlActual) {
-    console.log('⚠️ No hay URL para actualizar resumen');
+  // VALIDACIÓN: Asegurar que tenemos URL
+  if (!urlActual || urlActual === '') {
+    console.error('❌ No hay URL del Sheet para actualizar resumen');
     return;
   }
   
-  // ... resto igual
+  console.log('📊 Actualizando resumen de ejecución con URL:', urlActual);
   
   google.script.run
     .withSuccessHandler(function(response) {
-      if (response.success) {
+      if (response && response.success) {
         const resumen = response.data;
         
-        console.log('📊 Resumen recibido:', resumen);
+        // Actualizar números
+        document.getElementById('statOk').textContent = resumen.ok || 0;
+        document.getElementById('statNoOk').textContent = resumen.noOk || 0;
+        document.getElementById('statEjecutando').textContent = resumen.ejecutando || 0;
+        document.getElementById('statPendiente').textContent = (resumen.sinEjecutar || 0) + (resumen.bloqueado || 0) + (resumen.descartado || 0);
         
-        // Actualizar números individuales
-        document.getElementById('statOk').textContent = resumen.ok;
-        document.getElementById('statNoOk').textContent = resumen.noOk;
-        document.getElementById('statBloqueado').textContent = resumen.bloqueado;
-        document.getElementById('statSinEjecutar').textContent = resumen.sinEjecutar;
-        document.getElementById('statEjecutando').textContent = resumen.ejecutando;
+        // Actualizar barra de progreso
+        const total = resumen.total || 1;
+        const pctOk = Math.round((resumen.ok / total) * 100);
+        const pctNoOk = Math.round((resumen.noOk / total) * 100);
+        const pctEjecutando = Math.round((resumen.ejecutando / total) * 100);
+        const pctPendiente = 100 - pctOk - pctNoOk - pctEjecutando;
         
-        // Calcular porcentaje (solo sobre casos NO descartados)
-        const total = resumen.total || 1; // Evitar división por 0
-        const porcentaje = total > 0 ? Math.round((resumen.ok / total) * 100) : 0;
+        document.getElementById('progressOk').style.width = pctOk + '%';
+        document.getElementById('progressNoOk').style.width = pctNoOk + '%';
+        document.getElementById('progressEjecutando').style.width = pctEjecutando + '%';
+        document.getElementById('progressPendiente').style.width = pctPendiente + '%';
         
-        // Actualizar texto de progreso
-        const textoProgreso = document.getElementById('textoProgreso');
-        textoProgreso.textContent = 'Hay ' + resumen.ok + ' casos OK de ' + total;
-        
-        // Actualizar barra verde
-        const progressFill = document.getElementById('progressFillOk');
-        progressFill.style.width = porcentaje + '%';
-        
-        // Actualizar porcentaje
-        const progressPercentage = document.getElementById('progressPercentage');
-        progressPercentage.textContent = porcentaje + '%';
-        
-        // Cambiar color del texto del porcentaje según el ancho de la barra
-        if (porcentaje > 40) {
-          progressPercentage.style.color = 'white';
-          progressPercentage.style.textShadow = '0 1px 2px rgba(0,0,0,0.3)';
-        } else {
-          progressPercentage.style.color = '#1e293b';
-          progressPercentage.style.textShadow = '0 1px 2px rgba(255,255,255,0.8)';
-        }
-        
-        console.log('✅ Resumen actualizado: ' + porcentaje + '% (' + resumen.ok + '/' + total + ')');
-      } else {
-        console.error('❌ Error en respuesta de resumen:', response.mensaje);
+        console.log('✅ Resumen actualizado:', resumen);
       }
     })
     .withFailureHandler(function(error) {
       console.error('❌ Error actualizando resumen:', error);
     })
-    .obtenerResumenEjecucion(urlActual);
+    .obtenerResumenEjecucion(urlActual); // ← USAR urlActual DIRECTAMENTE
 }
 
   console.log('✅ Frontend Components Casos v3.0 COMPLETO cargado');
