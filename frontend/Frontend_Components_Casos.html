@@ -123,6 +123,201 @@
     color: #334155;
     margin-bottom: 1rem;
   }
+/* ═══════════════════════════════════════════════════════ */
+  /* BARRA DE RESUMEN DE EJECUCIÓN                           */
+  /* ═══════════════════════════════════════════════════════ */
+  
+ /* ═══════════════════════════════════════════════════════ */
+/* BARRA DE RESUMEN DE EJECUCIÓN - VERSIÓN SIMPLIFICADA   */
+/* ═══════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════ */
+/* BARRA DE RESUMEN DE EJECUCIÓN - VERSIÓN SIMPLIFICADA   */
+/* ═══════════════════════════════════════════════════════ */
+
+.barra-resumen-ejecucion {
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  border: 2px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.resumen-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  color: #1e293b;
+}
+
+.resumen-titulo {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.resumen-texto-progreso {
+  font-size: 0.95rem;
+  color: #475569;
+  font-weight: 500;
+}
+
+.progress-bar-ejecucion {
+  width: 100%;
+  height: 32px;
+  background: #e2e8f0;
+  border-radius: 16px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+  margin-bottom: 1rem;
+  position: relative;
+}
+
+.progress-fill-ok {
+  background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+  height: 100%;
+  transition: width 0.5s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  font-size: 0.9rem;
+  position: relative;
+}
+
+.progress-percentage {
+  position: absolute;
+  width: 100%;
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #1e293b;
+  z-index: 10;
+  text-shadow: 0 1px 2px rgba(255,255,255,0.8);
+}
+
+.resumen-stats-compacto {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.stat-compacto {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.stat-compacto.ok { color: #065f46; }
+.stat-compacto.no-ok { color: #991b1b; }
+.stat-compacto.bloqueado { color: #7c2d12; }
+.stat-compacto.sin-ejecutar { color: #475569; }
+.stat-compacto.ejecutando { color: #92400e; }
+
+.stat-separator-compacto {
+  color: #cbd5e1;
+  font-weight: 400;
+}
+  /* ═══════════════════════════════════════════════════════ */
+  /* ESTADOS DE EJECUCIÓN EN TABLA                           */
+  /* ═══════════════════════════════════════════════════════ */
+  
+  .estado-ejecucion-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 2px solid transparent;
+    white-space: nowrap;
+  }
+  
+  .estado-ejecucion-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+  }
+  
+  /* Sin ejecutar */
+  .estado-sin-ejecutar {
+    background: #f1f5f9;
+    color: #475569;
+    border-color: #cbd5e1;
+  }
+  
+  .estado-sin-ejecutar:hover {
+    background: #e2e8f0;
+    border-color: #94a3b8;
+  }
+  
+  /* Ejecutando */
+  .estado-ejecutando {
+    background: #fef3c7;
+    color: #92400e;
+    border-color: #fcd34d;
+    animation: pulse-estado 2s infinite;
+  }
+  
+  @keyframes pulse-estado {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+  }
+  
+  /* Bloqueado */
+  .estado-bloqueado {
+    background: #fee2e2;
+    color: #991b1b;
+    border-color: #fca5a5;
+  }
+  
+  .estado-bloqueado:hover {
+    background: #fecaca;
+  }
+  
+  /* OK */
+  .estado-ok {
+    background: #d1fae5;
+    color: #065f46;
+    border-color: #6ee7b7;
+  }
+  
+  .estado-ok:hover {
+    background: #a7f3d0;
+  }
+  
+  /* No_OK */
+  .estado-no-ok {
+    background: #fee2e2;
+    color: #991b1b;
+    border-color: #fca5a5;
+  }
+  
+  .estado-no-ok:hover {
+    background: #fecaca;
+  }
+  
+  /* Descartado */
+  .estado-descartado {
+    background: #e2e8f0;
+    color: #64748b;
+    border-color: #cbd5e1;
+    opacity: 0.7;
+  }
+  
+  .estado-descartado:hover {
+    background: #cbd5e1;
+    opacity: 1;
+  }
+
 </style>
 
 <!-- ═══════════════════════════════════════════════════════════════════════════ -->
@@ -142,6 +337,31 @@
         <span>Crear Caso</span>
       </button>
     </div>
+
+<!-- Barra de Resumen de Ejecución -->
+<div id="barraResumenEjecucion" class="barra-resumen-ejecucion">
+  <div class="resumen-header">
+    <span class="resumen-titulo">📊  Progreso de Éxito de Ejecución</span>
+    <span class="resumen-texto-progreso" id="textoProgreso">Hay 0 casos OK de 0</span>
+  </div>
+  
+  <div class="progress-bar-ejecucion">
+    <div class="progress-percentage" id="progressPercentage">0%</div>
+    <div class="progress-fill-ok" id="progressFillOk" style="width: 0%"></div>
+  </div>
+  
+  <div class="resumen-stats-compacto">
+    <span class="stat-compacto ok">✅ <span id="statOk">0</span></span>
+    <span class="stat-separator-compacto">|</span>
+    <span class="stat-compacto no-ok">❌ <span id="statNoOk">0</span></span>
+    <span class="stat-separator-compacto">|</span>
+    <span class="stat-compacto bloqueado">🚫 <span id="statBloqueado">0</span></span>
+    <span class="stat-separator-compacto">|</span>
+    <span class="stat-compacto sin-ejecutar">🔵 <span id="statSinEjecutar">0</span></span>
+    <span class="stat-separator-compacto">|</span>
+    <span class="stat-compacto ejecutando">⚡ <span id="statEjecutando">0</span></span>
+  </div>
+</div>
 
     <div class="filtros-container">
       <div class="input-group">
@@ -198,19 +418,20 @@
   </div>
 
   <div class="table-container">
-    <table class="table">
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Hoja/Módulo</th>
-          <th>Título</th>
-          <th>Prioridad</th>
-          <th>Estado</th>
-          <th>Crítico</th>
-          <th>Regresión</th>
-          <th style="width: 180px;">Acciones</th>
-        </tr>
-      </thead>
+<table class="table">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Hoja/Módulo</th>
+      <th>Título</th>
+      <th>Prioridad</th>
+      <th>Est. Diseño</th>
+      <th>Estado Ejecución</th>
+      <th>Crítico</th>
+      <th>Regresión</th>
+      <th style="width: 180px;">Acciones</th>
+    </tr>
+  </thead>
       <tbody id="tablaCasos">
         <tr>
           <td colspan="8" style="text-align: center; padding: 2rem; color: #64748b;">
@@ -386,6 +607,8 @@
   </div>
 </div>
 
+
+
 <!-- ═══════════════════════════════════════════════════════════════════════════ -->
 <!-- MODAL CREAR NUEVA HOJA                                                      -->
 <!-- ═══════════════════════════════════════════════════════════════════════════ -->
@@ -472,6 +695,214 @@
     </div>
   </div>
 </div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<!-- MODAL EJECUTAR CASO                                                         -->
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+
+<div id="modalEjecutarCaso" class="modal-overlay">
+  <div class="modal" style="max-width: 700px;">
+    <div class="modal-header">
+      <h3 class="modal-title">
+        <span>⚡</span>
+        <span id="tituloModalEjecucion">Ejecutar Caso</span>
+      </h3>
+      <button class="modal-close" onclick="cerrarModalEjecucion()">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <form id="formEjecutarCaso" onsubmit="guardarEjecucion(); return false;">
+        <input type="hidden" id="ejecucionCasoId" value="">
+        
+        <!-- Info del caso -->
+        <div style="background: #f8fafc; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
+          <div style="font-size: 0.9rem; color: #64748b; margin-bottom: 0.25rem;">Caso:</div>
+          <div style="font-weight: 600; font-size: 1.1rem; color: #1e293b;" id="ejecucionCasoIdDisplay"></div>
+          <div style="margin-top: 0.5rem; color: #475569;" id="ejecucionCasoTitulo"></div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label required">🎯 Estado de Ejecución</label>
+          <select id="ejecucionEstado" class="form-select" required onchange="validarEvidenciasRequeridas()">
+            <option value="">Selecciona un estado...</option>
+            <option value="Sin ejecutar">🔵 Sin ejecutar</option>
+            <option value="Ejecutando">⚡ Ejecutando</option>
+            <option value="Bloqueado">🚫 Bloqueado</option>
+            <option value="OK">✅ OK</option>
+            <option value="No_OK">❌ No_OK</option>
+            <option value="Descartado">⏭️ Descartado</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">💬 Comentarios / Observaciones</label>
+          <textarea 
+            id="ejecucionComentarios" 
+            class="form-textarea" 
+            placeholder="Ej: Login funcionó correctamente con todos los tipos de usuario..."
+            rows="4"
+          ></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">📎 Evidencias</label>
+          
+          <div id="advertenciaEvidencia" class="hidden" style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 0.75rem; border-radius: 6px; margin-bottom: 1rem;">
+            <strong>⚠️ Evidencia recomendada</strong><br>
+            Si marcas como ✅ OK, se recomienda adjuntar evidencias.
+          </div>
+          
+          <!-- Opción 1: Subir archivos -->
+          <div style="margin-bottom: 1.5rem;">
+            <div style="font-weight: 600; margin-bottom: 0.5rem;">📤 Subir archivos (máx 50MB c/u)</div>
+            <div 
+              id="dropzoneEvidencias" 
+              class="dropzone-evidencias"
+              ondrop="handleDrop(event)" 
+              ondragover="handleDragOver(event)"
+              ondragleave="handleDragLeave(event)"
+              onclick="document.getElementById('inputArchivos').click()"
+            >
+              <div style="text-align: center; padding: 2rem;">
+                <div style="font-size: 3rem; margin-bottom: 0.5rem;">📁</div>
+                <div style="font-weight: 600; margin-bottom: 0.25rem;">Arrastra archivos aquí o haz click</div>
+                <div style="font-size: 0.85rem; color: #64748b;">PNG, JPG, MP4, PDF (máx 50MB)</div>
+              </div>
+            </div>
+            <input 
+              type="file" 
+              id="inputArchivos" 
+              multiple 
+              accept="image/*,video/*,.pdf" 
+              style="display: none;"
+              onchange="handleFileSelect(event)"
+            >
+          </div>
+          
+          <!-- Opción 2: Pegar links -->
+          <div style="margin-bottom: 1rem;">
+            <div style="font-weight: 600; margin-bottom: 0.5rem;">🔗 O pega links de archivos en Drive</div>
+            <div id="contenedorLinks">
+              <input 
+                type="url" 
+                class="form-input" 
+                placeholder="https://drive.google.com/file/d/xxxxx/view"
+                id="linkEvidencia0"
+              >
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="agregarCampoLink()" style="margin-top: 0.5rem;">
+              + Agregar otro link
+            </button>
+          </div>
+          
+          <!-- Lista de evidencias agregadas -->
+          <div id="listaEvidencias" class="lista-evidencias hidden">
+            <div style="font-weight: 600; margin-bottom: 0.5rem;">📋 Archivos/Links agregados:</div>
+            <div id="contenidoListaEvidencias"></div>
+          </div>
+        </div>
+
+        <!-- Botón Reportar Defecto (sin funcionalidad) -->
+        <div style="background: #f8fafc; border: 2px dashed #cbd5e1; border-radius: 8px; padding: 1rem; text-align: center;">
+          <div style="color: #64748b; font-size: 0.9rem; margin-bottom: 0.5rem;">
+            🐛 ¿Encontraste un defecto?
+          </div>
+          <button type="button" class="btn btn-secondary" disabled style="opacity: 0.6;">
+            🐛 Reportar Defecto
+          </button>
+          <div style="font-size: 0.85rem; color: #94a3b8; margin-top: 0.5rem;">
+            Próximamente: Crea un bug vinculado a este caso
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <div class="modal-footer">
+      <button type="submit" form="formEjecutarCaso" class="btn btn-primary">
+        💾 Guardar
+      </button>
+      <button type="button" class="btn btn-secondary" onclick="cerrarModalEjecucion()">
+        Cancelar
+      </button>
+    </div>
+  </div>
+</div>
+
+<style>
+  .dropzone-evidencias {
+    border: 2px dashed #cbd5e1;
+    border-radius: 8px;
+    background: #f8fafc;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .dropzone-evidencias:hover {
+    border-color: #3b82f6;
+    background: #eff6ff;
+  }
+  
+  .dropzone-evidencias.drag-over {
+    border-color: #10b981;
+    background: #d1fae5;
+  }
+  
+  .lista-evidencias {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1rem;
+  }
+  
+  .evidencia-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    margin-bottom: 0.5rem;
+  }
+  
+  .evidencia-item:last-child {
+    margin-bottom: 0;
+  }
+  
+  .btn-eliminar-evidencia {
+    background: none;
+    border: none;
+    color: #ef4444;
+    cursor: pointer;
+    font-size: 1.2rem;
+    padding: 0.25rem 0.5rem;
+  }
+  
+  .btn-eliminar-evidencia:hover {
+    background: #fee2e2;
+    border-radius: 4px;
+  }
+
+  /* ═══════════════════════════════════════════════════════ */
+/* FIX: Modal de confirmación siempre adelante             */
+/* ═══════════════════════════════════════════════════════ */
+
+#modalConfirmApp.modal-overlay {
+  z-index: 10000 !important;
+}
+
+#modalEjecutarCaso.modal-overlay {
+  z-index: 2000 !important;
+}
+
+#modalCrearCaso.modal-overlay {
+  z-index: 1500 !important;
+}
+
+#modalDetalleCaso.modal-overlay {
+  z-index: 1500 !important;
+}
+</style>
 
 <!-- ═══════════════════════════════════════════════════════════════════════════ -->
 <!-- SCRIPTS - VERSIÓN 3.0 CON MOVER CASOS                                       -->
@@ -770,8 +1201,9 @@
         if (response.success === true) {
           window.casosActuales = (response.data && response.data.casos) ? response.data.casos : [];
           window.casosFiltrados = window.casosActuales;
-          
+
           renderizarTablaCasos(window.casosActuales);
+        actualizarResumenEjecucion(); 
           
           if (window.casosActuales.length > 0) {
             mostrarToast('✅ Casos cargados: ' + window.casosActuales.length, 'success');
@@ -802,51 +1234,90 @@
   }
 
   function renderizarTablaCasos(casos) {
-    const tbody = document.getElementById('tablaCasos');
-    
-    if (!casos || casos.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 2rem; color: #64748b;">No hay casos para mostrar</td></tr>';
-      return;
-    }
-
-    let html = '';
-    casos.forEach(function(caso) {
-      const badgePrioridad = getBadgePrioridad(caso.Prioridad);
-      const badgeEstado = getBadgeEstado(caso.Estado);
-      const esCritico = caso.FlujoCritico === 'Si' || caso.FlujoCritico === 'Sí';
-      const esRegresion = caso.CandidatoRegresion === 'Si' || caso.CandidatoRegresion === 'Sí';
-      const esEliminado = caso.Estado === 'Eliminado';
-      
-      const clasesFila = esEliminado ? 'caso-eliminado' : '';
-      
-      html += '<tr class="' + clasesFila + '">';
-      html += '<td style="font-family: monospace; font-weight: 600;">' + (caso.ID || '') + '</td>';
-      html += '<td>' + (caso.Hoja || 'Casos') + '</td>';
-      html += '<td>' + (caso.Titulo || '') + '</td>';
-      html += '<td><span class="badge ' + badgePrioridad + '">' + (caso.Prioridad || '') + '</span></td>';
-      html += '<td><span class="badge ' + badgeEstado + '">' + (caso.Estado || 'Pendiente') + '</span></td>';
-      html += '<td class="indicador-critico">' + (esCritico ? '⭐' : '') + '</td>';
-      html += '<td class="indicador-regresion">' + (esRegresion ? '🔄' : '') + '</td>';
-      html += '<td>';
-      
-      if (esEliminado) {
-        html += '<button class="btn btn-icon btn-success" onclick="restaurarCaso(\'' + caso.ID + '\')" title="Restaurar">';
-        html += '↩️</button>';
-      } else {
-        html += '<button class="btn btn-icon btn-primary" onclick="verDetalleCaso(\'' + caso.ID + '\')" title="Ver detalle">';
-        html += '👁️</button> ';
-        html += '<button class="btn btn-icon btn-secondary" onclick="editarCaso(\'' + caso.ID + '\')" title="Editar">';
-        html += '✏️</button> ';
-        html += '<button class="btn btn-icon btn-danger" onclick="confirmarEliminarCaso(\'' + caso.ID + '\')" title="Eliminar">';
-        html += '🗑️</button>';
-      }
-      
-      html += '</td>';
-      html += '</tr>';
-    });
-    
-    tbody.innerHTML = html;
+  const tbody = document.getElementById('tablaCasos');
+  
+  if (!casos || casos.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 2rem; color: #64748b;">No hay casos para mostrar</td></tr>';
+    return;
   }
+
+  let html = '';
+  casos.forEach(function(caso) {
+    const badgePrioridad = getBadgePrioridad(caso.Prioridad);
+    const estadoDiseño = caso.EstadoDiseño || caso.Estado || 'Pendiente'; // Retrocompatibilidad
+    const badgeEstadoDiseño = getBadgeEstado(estadoDiseño);
+    const esCritico = caso.FlujoCritico === 'Si' || caso.FlujoCritico === 'Sí';
+    const esRegresion = caso.CandidatoRegresion === 'Si' || caso.CandidatoRegresion === 'Sí';
+    const esEliminado = estadoDiseño === 'Eliminado';
+    
+    // Estado de ejecución
+    const estadoEjecucion = caso.ResultadoUltimaEjecucion || 'Sin ejecutar';
+    const htmlEstadoEjecucion = generarBadgeEstadoEjecucion(estadoEjecucion, caso.ID);
+    
+    const clasesFila = esEliminado ? 'caso-eliminado' : '';
+    
+    html += '<tr class="' + clasesFila + '">';
+    html += '<td style="font-family: monospace; font-weight: 600;">' + (caso.ID || '') + '</td>';
+    html += '<td>' + (caso.Hoja || 'Casos') + '</td>';
+    html += '<td>' + (caso.Titulo || '') + '</td>';
+    html += '<td><span class="badge ' + badgePrioridad + '">' + (caso.Prioridad || '') + '</span></td>';
+    html += '<td><span class="badge ' + badgeEstadoDiseño + '">' + estadoDiseño + '</span></td>';
+    html += '<td>' + htmlEstadoEjecucion + '</td>'; // ← NUEVO
+    html += '<td class="indicador-critico">' + (esCritico ? '⭐' : '') + '</td>';
+    html += '<td class="indicador-regresion">' + (esRegresion ? '🔄' : '') + '</td>';
+    html += '<td>';
+    
+    if (esEliminado) {
+      html += '<button class="btn btn-icon btn-success" onclick="restaurarCaso(\'' + caso.ID + '\')" title="Restaurar">';
+      html += '↩️</button>';
+    } else {
+      html += '<button class="btn btn-icon btn-primary" onclick="verDetalleCaso(\'' + caso.ID + '\')" title="Ver detalle">';
+      html += '👁️</button> ';
+      html += '<button class="btn btn-icon btn-secondary" onclick="editarCaso(\'' + caso.ID + '\')" title="Editar">';
+      html += '✏️</button> ';
+      html += '<button class="btn btn-icon btn-danger" onclick="confirmarEliminarCaso(\'' + caso.ID + '\')" title="Eliminar">';
+      html += '🗑️</button>';
+    }
+    
+    html += '</td>';
+    html += '</tr>';
+  });
+  
+  tbody.innerHTML = html;
+  
+  // Actualizar resumen después de renderizar
+  actualizarResumenEjecucion();
+}
+
+/**
+ * Genera el HTML del badge de estado de ejecución (clickeable)
+ */
+function generarBadgeEstadoEjecucion(estado, casoId) {
+  const iconos = {
+    'Sin ejecutar': '🔵',
+    'Ejecutando': '⚡',
+    'Bloqueado': '🚫',
+    'OK': '✅',
+    'No_OK': '❌',
+    'Descartado': '⏭️'
+  };
+  
+  const clases = {
+    'Sin ejecutar': 'estado-sin-ejecutar',
+    'Ejecutando': 'estado-ejecutando',
+    'Bloqueado': 'estado-bloqueado',
+    'OK': 'estado-ok',
+    'No_OK': 'estado-no-ok',
+    'Descartado': 'estado-descartado'
+  };
+  
+  const icono = iconos[estado] || '🔵';
+  const clase = clases[estado] || 'estado-sin-ejecutar';
+  
+  return '<button class="estado-ejecucion-btn ' + clase + '" onclick="abrirModalEjecucion(\'' + casoId + '\'); event.stopPropagation();" title="Click para ejecutar">' +
+         icono + ' ' + estado +
+         '</button>';
+}
 
   // ===================================================================
   // VER DETALLE
@@ -1755,6 +2226,442 @@ function abrirModalCrearHoja() {
     });
 
     renderizarTablaCasos(window.casosFiltrados); }  
+
+    // ===================================================================
+// EJECUCIÓN DE CASOS
+// ===================================================================
+
+/**
+ * Variables globales para ejecución
+ */
+if (!window.evidenciasTemporales) window.evidenciasTemporales = [];
+if (!window.contadorLinks) window.contadorLinks = 1;
+
+/**
+ * Abre el modal de ejecución
+ */
+function abrirModalEjecucion(casoId) {
+  console.log('⚡ Abriendo modal de ejecución para:', casoId);
+  
+  // Buscar el caso en los datos actuales
+  const caso = window.casosActuales.find(c => c.ID === casoId);
+  
+  if (!caso) {
+    mostrarToast('Error: Caso no encontrado', 'error');
+    return;
+  }
+  
+  // Guardar ID del caso
+  document.getElementById('ejecucionCasoId').value = casoId;
+  document.getElementById('ejecucionCasoIdDisplay').textContent = casoId;
+  document.getElementById('ejecucionCasoTitulo').textContent = caso.Titulo || '';
+  
+  // Cargar estado actual
+  const estadoActual = caso.ResultadoUltimaEjecucion || 'Sin ejecutar';
+  document.getElementById('ejecucionEstado').value = estadoActual;
+  
+  // Cargar comentarios actuales
+  document.getElementById('ejecucionComentarios').value = caso.ComentariosEjecucion || '';
+  
+  // Limpiar evidencias temporales
+  window.evidenciasTemporales = [];
+  document.getElementById('listaEvidencias').classList.add('hidden');
+  document.getElementById('contenidoListaEvidencias').innerHTML = '';
+  
+  // Si tiene evidencias guardadas, cargarlas
+  if (caso.EvidenciasURL && caso.EvidenciasURL.trim() !== '') {
+    const evidencias = caso.EvidenciasURL.split('\n').filter(e => e.trim() !== '');
+    evidencias.forEach(url => {
+      window.evidenciasTemporales.push({
+        tipo: 'link',
+        url: url,
+        nombre: extraerNombreDeUrl(url)
+      });
+    });
+    
+    if (window.evidenciasTemporales.length > 0) {
+      renderizarListaEvidencias();
+    }
+  }
+  
+  // Resetear campos de links
+  window.contadorLinks = 1;
+  document.getElementById('contenedorLinks').innerHTML = `
+    <input 
+      type="url" 
+      class="form-input" 
+      placeholder="https://drive.google.com/file/d/xxxxx/view"
+      id="linkEvidencia0"
+    >
+  `;
+  
+  // Validar evidencias
+  validarEvidenciasRequeridas();
+  
+  // Abrir modal
+  abrirModal('modalEjecutarCaso');
+}
+
+/**
+ * Cierra el modal de ejecución
+ */
+function cerrarModalEjecucion() {
+  cerrarModal('modalEjecutarCaso');
+  window.evidenciasTemporales = [];
+}
+
+/**
+ * Valida si se requieren evidencias
+ */
+function validarEvidenciasRequeridas() {
+  const estado = document.getElementById('ejecucionEstado').value;
+  const advertencia = document.getElementById('advertenciaEvidencia');
+  
+  if (estado === 'OK') {
+    advertencia.classList.remove('hidden');
+  } else {
+    advertencia.classList.add('hidden');
+  }
+}
+
+/**
+ * Maneja el drag over
+ */
+function handleDragOver(event) {
+  event.preventDefault();
+  event.stopPropagation();
+  document.getElementById('dropzoneEvidencias').classList.add('drag-over');
+}
+
+/**
+ * Maneja el drag leave
+ */
+function handleDragLeave(event) {
+  event.preventDefault();
+  event.stopPropagation();
+  document.getElementById('dropzoneEvidencias').classList.remove('drag-over');
+}
+
+/**
+ * Maneja el drop de archivos
+ */
+function handleDrop(event) {
+  event.preventDefault();
+  event.stopPropagation();
+  document.getElementById('dropzoneEvidencias').classList.remove('drag-over');
+  
+  const files = event.dataTransfer.files;
+  procesarArchivos(files);
+}
+
+/**
+ * Maneja la selección de archivos
+ */
+function handleFileSelect(event) {
+  const files = event.target.files;
+  procesarArchivos(files);
+  
+  // Resetear input
+  event.target.value = '';
+}
+
+/**
+ * Procesa los archivos seleccionados
+ */
+function procesarArchivos(files) {
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    
+    // Validar tamaño (50 MB)
+    if (file.size > 50 * 1024 * 1024) {
+      mostrarToast('El archivo "' + file.name + '" excede los 50 MB', 'warning');
+      continue;
+    }
+    
+    // Leer archivo como base64
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      window.evidenciasTemporales.push({
+        tipo: 'archivo',
+        nombre: file.name,
+        tamaño: file.size,
+        mimeType: file.type,
+        contenidoBase64: e.target.result.split(',')[1] // Quitar prefijo data:...
+      });
+      
+      renderizarListaEvidencias();
+    };
+    
+    reader.readAsDataURL(file);
+  }
+}
+
+/**
+ * Agrega un campo para link adicional
+ */
+function agregarCampoLink() {
+  const contenedor = document.getElementById('contenedorLinks');
+  window.contadorLinks++;
+  
+  const nuevoInput = document.createElement('input');
+  nuevoInput.type = 'url';
+  nuevoInput.className = 'form-input';
+  nuevoInput.placeholder = 'https://drive.google.com/file/d/xxxxx/view';
+  nuevoInput.id = 'linkEvidencia' + window.contadorLinks;
+  nuevoInput.style.marginTop = '0.5rem';
+  
+  contenedor.appendChild(nuevoInput);
+}
+
+/**
+ * Renderiza la lista de evidencias agregadas
+ */
+function renderizarListaEvidencias() {
+  const lista = document.getElementById('listaEvidencias');
+  const contenido = document.getElementById('contenidoListaEvidencias');
+  
+  if (window.evidenciasTemporales.length === 0) {
+    lista.classList.add('hidden');
+    return;
+  }
+  
+  lista.classList.remove('hidden');
+  
+  let html = '';
+  window.evidenciasTemporales.forEach((evidencia, index) => {
+    if (evidencia.tipo === 'archivo') {
+      const tamañoMB = (evidencia.tamaño / (1024 * 1024)).toFixed(2);
+      html += `
+        <div class="evidencia-item">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span>📄</span>
+            <span style="font-weight: 500;">${evidencia.nombre}</span>
+            <span style="font-size: 0.85rem; color: #64748b;">(${tamañoMB} MB)</span>
+          </div>
+          <button type="button" class="btn-eliminar-evidencia" onclick="eliminarEvidencia(${index})" title="Eliminar">
+            🗑️
+          </button>
+        </div>
+      `;
+    } else {
+      html += `
+        <div class="evidencia-item">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span>🔗</span>
+            <span style="font-weight: 500; word-break: break-all;">${evidencia.nombre || evidencia.url}</span>
+          </div>
+          <button type="button" class="btn-eliminar-evidencia" onclick="eliminarEvidencia(${index})" title="Eliminar">
+            🗑️
+          </button>
+        </div>
+      `;
+    }
+  });
+  
+  contenido.innerHTML = html;
+}
+
+/**
+ * Elimina una evidencia
+ */
+function eliminarEvidencia(index) {
+  window.evidenciasTemporales.splice(index, 1);
+  renderizarListaEvidencias();
+}
+
+/**
+ * Extrae nombre de una URL
+ */
+function extraerNombreDeUrl(url) {
+  try {
+    const partes = url.split('/');
+    return partes[partes.length - 1] || 'Archivo de Drive';
+  } catch (e) {
+    return 'Archivo de Drive';
+  }
+}
+
+/**
+ * Guarda la ejecución
+ */
+async function guardarEjecucion() {
+  const casoId = document.getElementById('ejecucionCasoId').value;
+  const estadoEjecucion = document.getElementById('ejecucionEstado').value;
+  const comentarios = document.getElementById('ejecucionComentarios').value;
+  
+  if (!estadoEjecucion) {
+    mostrarToast('Selecciona un estado de ejecución', 'warning');
+    return;
+  }
+  
+  // Recopilar links de los inputs
+  for (let i = 0; i <= window.contadorLinks; i++) {
+    const input = document.getElementById('linkEvidencia' + i);
+    if (input && input.value.trim() !== '') {
+      window.evidenciasTemporales.push({
+        tipo: 'link',
+        url: input.value.trim(),
+        nombre: extraerNombreDeUrl(input.value.trim())
+      });
+    }
+  }
+  
+  // Validar evidencias si es OK
+  if (estadoEjecucion === 'OK' && window.evidenciasTemporales.length === 0) {
+    const confirmar = await mostrarConfirmacionApp({
+      titulo: '⚠️ Sin evidencias',
+      mensaje: 'Estás marcando el caso como ✅ OK sin adjuntar evidencias.<br><br>' +
+               'Se recomienda agregar:<br>' +
+               '• Screenshots<br>' +
+               '• Videos<br>' +
+               '• Logs o documentos<br><br>' +
+               '¿Deseas continuar sin evidencias?',
+      icono: '⚠️',
+      textoOk: 'Sí, Guardar sin evidencias',
+      textoCancelar: 'Volver a editar'
+    });
+    
+    if (!confirmar) return;
+  }
+  
+  mostrarSpinner();
+  
+  // Subir archivos a Drive primero
+  const urlsEvidencias = [];
+  
+  for (let i = 0; i < window.evidenciasTemporales.length; i++) {
+    const evidencia = window.evidenciasTemporales[i];
+    
+    if (evidencia.tipo === 'archivo') {
+      // Subir archivo
+      try {
+        const resultado = await subirArchivoADrive(evidencia);
+        if (resultado.success) {
+          urlsEvidencias.push(resultado.url);
+        } else {
+          mostrarToast('Error subiendo ' + evidencia.nombre, 'error');
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        mostrarToast('Error subiendo archivo', 'error');
+      }
+    } else {
+      // Es un link
+      urlsEvidencias.push(evidencia.url);
+    }
+  }
+  
+  // Guardar estado de ejecución
+  const datosEjecucion = {
+    estadoEjecucion: estadoEjecucion,
+    comentarios: comentarios,
+    evidencias: urlsEvidencias
+  };
+  
+  google.script.run
+    .withSuccessHandler(function(response) {
+      ocultarSpinner();
+      
+      if (response.success) {
+        mostrarToast('✅ Estado actualizado correctamente', 'success');
+        cerrarModalEjecucion();
+        cargarTodosLosCasos();
+      } else {
+        mostrarToast('Error: ' + response.mensaje, 'error');
+      }
+    })
+    .withFailureHandler(function(error) {
+      ocultarSpinner();
+      mostrarToast('Error: ' + error.message, 'error');
+    })
+    .actualizarEstadoEjecucion(recuperarSheetUrl(), casoId, datosEjecucion);
+}
+
+/**
+ * Sube un archivo a Drive (Promise wrapper)
+ */
+function subirArchivoADrive(archivo) {
+  return new Promise((resolve, reject) => {
+    google.script.run
+      .withSuccessHandler(resolve)
+      .withFailureHandler(reject)
+      .subirEvidenciaADrive({
+        nombre: archivo.nombre,
+        contenidoBase64: archivo.contenidoBase64,
+        mimeType: archivo.mimeType
+      });
+  });
+}
+
+/**
+ * Actualiza el resumen de ejecución con la nueva lógica
+ * No cuenta descartados
+ */
+function actualizarResumenEjecucion() {
+  const urlActual = recuperarSheetUrl();
+  
+  // ← AGREGAR ESTE LOG
+  console.log('🔍 actualizarResumenEjecucion - URL recuperada:', urlActual);
+  console.log('   Tipo:', typeof urlActual);
+  console.log('   Es null?:', urlActual === null);
+  console.log('   Es vacío?:', urlActual === '');
+  
+  if (!urlActual) {
+    console.log('⚠️ No hay URL para actualizar resumen');
+    return;
+  }
+  
+  // ... resto igual
+  
+  google.script.run
+    .withSuccessHandler(function(response) {
+      if (response.success) {
+        const resumen = response.data;
+        
+        console.log('📊 Resumen recibido:', resumen);
+        
+        // Actualizar números individuales
+        document.getElementById('statOk').textContent = resumen.ok;
+        document.getElementById('statNoOk').textContent = resumen.noOk;
+        document.getElementById('statBloqueado').textContent = resumen.bloqueado;
+        document.getElementById('statSinEjecutar').textContent = resumen.sinEjecutar;
+        document.getElementById('statEjecutando').textContent = resumen.ejecutando;
+        
+        // Calcular porcentaje (solo sobre casos NO descartados)
+        const total = resumen.total || 1; // Evitar división por 0
+        const porcentaje = total > 0 ? Math.round((resumen.ok / total) * 100) : 0;
+        
+        // Actualizar texto de progreso
+        const textoProgreso = document.getElementById('textoProgreso');
+        textoProgreso.textContent = 'Hay ' + resumen.ok + ' casos OK de ' + total;
+        
+        // Actualizar barra verde
+        const progressFill = document.getElementById('progressFillOk');
+        progressFill.style.width = porcentaje + '%';
+        
+        // Actualizar porcentaje
+        const progressPercentage = document.getElementById('progressPercentage');
+        progressPercentage.textContent = porcentaje + '%';
+        
+        // Cambiar color del texto del porcentaje según el ancho de la barra
+        if (porcentaje > 40) {
+          progressPercentage.style.color = 'white';
+          progressPercentage.style.textShadow = '0 1px 2px rgba(0,0,0,0.3)';
+        } else {
+          progressPercentage.style.color = '#1e293b';
+          progressPercentage.style.textShadow = '0 1px 2px rgba(255,255,255,0.8)';
+        }
+        
+        console.log('✅ Resumen actualizado: ' + porcentaje + '% (' + resumen.ok + '/' + total + ')');
+      } else {
+        console.error('❌ Error en respuesta de resumen:', response.mensaje);
+      }
+    })
+    .withFailureHandler(function(error) {
+      console.error('❌ Error actualizando resumen:', error);
+    })
+    .obtenerResumenEjecucion(urlActual);
+}
 
   console.log('✅ Frontend Components Casos v3.0 COMPLETO cargado');
 </script>
