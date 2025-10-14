@@ -1,4 +1,4 @@
-/ ===================================================================
+// ===================================================================
 // BACKEND_SERVICES_CASOS.GS
 // Servicio para gestión de casos de prueba
 // VERSIÓN 3.0: IDs simplificados + Mover casos entre hojas
@@ -586,32 +586,36 @@ function crearCaso(datosCaso) {
     var casoURI = generarCasoURI(spreadsheet.getId(), nuevoId);
     var usuario = Session.getActiveUser().getEmail();
     
-    var fila = [
-      nuevoId,
-      nombreHojaDestino,
-      datosCaso.titulo,
-      datosCaso.descripcion,
-      datosCaso.formatoCaso,
-      datosCaso.prioridad,
-      datosCaso.tipoPrueba || 'Funcional',
-      datosCaso.pasos || '',
-      datosCaso.resultadoEsperado || '',
-      datosCaso.scenarioGiven || '',
-      datosCaso.scenarioWhen || '',
-      datosCaso.scenarioThen || '',
-      datosCaso.precondiciones || '',
-      datosCaso.flujoCritico ? 'Si' : 'No',
-      datosCaso.candidatoRegresion ? 'Si' : 'No',
-      'Pendiente',
-      new Date(),
-      usuario,
-      '',
-      '',
-      '',
-      '',
-      casoURI,
-      ''
-    ];
+    // En la función crearCaso(), REEMPLAZAR el array 'fila' por esto:
+
+var fila = [
+  nuevoId,                                    // A - ID
+  nombreHojaDestino,                          // B - Hoja
+  datosCaso.titulo,                           // C - Titulo
+  datosCaso.descripcion,                      // D - Descripcion
+  datosCaso.formatoCaso,                      // E - Formato
+  datosCaso.prioridad,                        // F - Prioridad
+  datosCaso.tipoPrueba || 'Funcional',        // G - TipoPrueba
+  datosCaso.pasos || '',                      // H - Pasos
+  datosCaso.resultadoEsperado || '',          // I - ResultadoEsperado
+  datosCaso.scenarioGiven || '',              // J - ScenarioGiven
+  datosCaso.scenarioWhen || '',               // K - ScenarioWhen
+  datosCaso.scenarioThen || '',               // L - ScenarioThen
+  datosCaso.precondiciones || '',             // M - Precondiciones
+  datosCaso.flujoCritico ? 'Si' : 'No',       // N - FlujoCritico
+  datosCaso.candidatoRegresion ? 'Si' : 'No', // O - CandidatoRegresion
+  'Pendiente',                                // P - EstadoDiseño
+  new Date(),                                 // Q - FechaCreacion
+  usuario,                                    // R - CreadoPor
+  '',                                         // S - FechaUltimaEjecucion
+  'Sin ejecutar',                             // T - ResultadoUltimaEjecucion ← CORREGIDO
+  '',                                         // U - ComentariosEjecucion (NUEVO)
+  '',                                         // V - EvidenciasURL (NUEVO)
+  '',                                         // W - LinkTrelloHU
+  '',                                         // X - LinkBugRelacionado
+  casoURI,                                    // Y - CasoURI
+  ''                                          // Z - Notas
+];
     
     hojaCasos.appendRow(fila);
     
@@ -778,4 +782,270 @@ function crearNuevaHoja(sheetUrl, nombreHoja) {
       mensaje: 'Error al crear hoja: ' + error.message
     };
   }
+}
+
+/**
+ * Actualiza el estado de ejecución de un caso
+ * VERSIÓN CORREGIDA: Usa las columnas correctas del Sheet
+ */
+function actualizarEstadoEjecucion(sheetUrl, casoId, datosEjecucion) {
+  try {
+    Logger.log('⚡ Actualizando estado de ejecución de: ' + casoId);
+    Logger.log('Datos recibidos: ' + JSON.stringify(datosEjecucion));
+    
+    const datosActualizados = {
+      ResultadoUltimaEjecucion: datosEjecucion.estadoEjecucion,  // ← Columna T
+      ComentariosEjecucion: datosEjecucion.comentarios || '',    // ← Columna U (nueva)
+      EvidenciasURL: datosEjecucion.evidencias.join('\n'),       // ← Columna V (nueva)
+      FechaUltimaEjecucion: new Date()                           // ← Columna S
+    };
+    
+    Logger.log('Actualizando campos: ' + JSON.stringify(datosActualizados));
+    
+    const resultado = actualizarCaso(sheetUrl, casoId, datosActualizados);
+    
+    if (resultado.success) {
+      Logger.log('✅ Estado de ejecución actualizado correctamente');
+    } else {
+      Logger.log('❌ Error en actualizarCaso: ' + resultado.mensaje);
+    }
+    
+    return resultado;
+    
+  } catch (error) {
+    Logger.log('❌ Error actualizando estado ejecución: ' + error.toString());
+    return {
+      success: false,
+      mensaje: 'Error al actualizar estado: ' + error.message
+    };
+  }
+}
+
+/**
+ * Obtiene resumen de estados de ejecución
+ * NO cuenta casos descartados
+ * VERSIÓN CON LOGS DE DEBUG
+ */
+function obtenerResumenEjecucion(sheetUrl) {
+  try {
+    Logger.log('════════════════════════════════════════════');
+    Logger.log('📊 INICIO obtenerResumenEjecucion');
+    Logger.log('URL recibida: ' + sheetUrl);
+    Logger.log('════════════════════════════════════════════');
+    
+    let spreadsheet;
+    
+    // Si no hay URL, usar el spreadsheet activo
+    if (!sheetUrl || sheetUrl === '' || sheetUrl === 'null' || sheetUrl === 'undefined') {
+      Logger.log('⚠️ No hay URL válida, usando spreadsheet activo');
+      spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+    } else {
+      Logger.log('Abriendo spreadsheet por URL...');
+      spreadsheet = SpreadsheetApp.openByUrl(sheetUrl);
+    }
+    
+    Logger.log('✅ Spreadsheet: ' + spreadsheet.getName());
+    
+    const hojasExcluidas = ['Config', 'Bugs', 'Ejecuciones', 'Regresiones'];
+    const todasLasHojas = spreadsheet.getSheets();
+    
+    Logger.log('Total de hojas en el Sheet: ' + todasLasHojas.length);
+    
+    let resumen = {
+      sinEjecutar: 0,
+      ejecutandos: 0,
+      bloqueados: 0,
+      ok: 0,
+      noOk: 0,
+      descartados: 0,
+      total: 0,
+      totalConDescartados: 0
+    };
+    
+    todasLasHojas.forEach(function(hoja) {
+      const nombreHoja = hoja.getName();
+      
+      if (hojasExcluidas.indexOf(nombreHoja) > -1) {
+        Logger.log('⏭️ Saltando hoja del sistema: ' + nombreHoja);
+        return;
+      }
+      
+      Logger.log('\n📄 Procesando hoja: ' + nombreHoja);
+      
+      const datos = hoja.getDataRange().getValues();
+      
+      if (datos.length <= 1) {
+        Logger.log('  ⚠️ Hoja vacía (solo headers)');
+        return;
+      }
+      
+      const headers = datos[0];
+      const indexEstadoEjecucion = headers.indexOf('ResultadoUltimaEjecucion');
+      const indexEstadoDiseño = headers.indexOf('EstadoDiseño');
+      const indexEstadoLegacy = headers.indexOf('Estado');
+      
+      Logger.log('  Headers encontrados:');
+      Logger.log('    - ResultadoUltimaEjecucion: columna ' + indexEstadoEjecucion);
+      Logger.log('    - EstadoDiseño: columna ' + indexEstadoDiseño);
+      Logger.log('    - Estado (legacy): columna ' + indexEstadoLegacy);
+      
+      if (indexEstadoEjecucion === -1) {
+        Logger.log('  ❌ NO tiene columna ResultadoUltimaEjecucion - SALTANDO');
+        return;
+      }
+      
+      Logger.log('  Total de filas de datos: ' + (datos.length - 1));
+      
+      for (let i = 1; i < datos.length; i++) {
+        Logger.log('\n  📋 Fila ' + i + ':');
+        
+        // Solo contar casos que NO estén eliminados
+        let estadoDiseño = '';
+        if (indexEstadoDiseño > -1) {
+          estadoDiseño = datos[i][indexEstadoDiseño];
+        } else if (indexEstadoLegacy > -1) {
+          estadoDiseño = datos[i][indexEstadoLegacy];
+        }
+        
+        Logger.log('    EstadoDiseño: "' + estadoDiseño + '"');
+        
+        if (estadoDiseño === 'Eliminado') {
+          Logger.log('    ⏭️ CASO ELIMINADO - Saltando');
+          continue;
+        }
+        
+        const estadoEjecucionRaw = datos[i][indexEstadoEjecucion];
+        Logger.log('    EstadoEjecucion (raw): "' + estadoEjecucionRaw + '"');
+        Logger.log('    Tipo: ' + typeof estadoEjecucionRaw);
+        
+        // Limpiar y normalizar el estado
+        let estadoEjecucion = 'Sin ejecutar';
+        if (estadoEjecucionRaw) {
+          estadoEjecucion = estadoEjecucionRaw.toString().trim();
+        }
+        
+        Logger.log('    EstadoEjecucion (limpio): "' + estadoEjecucion + '"');
+        
+        resumen.totalConDescartados++;
+        
+        switch (estadoEjecucion) {
+          case 'Sin ejecutar':
+            resumen.sinEjecutar++;
+            resumen.total++;
+            Logger.log('    ✅ Contado como: Sin ejecutar');
+            break;
+          case 'Ejecutando':
+            resumen.ejecutando++;
+            resumen.total++;
+            Logger.log('    ✅ Contado como: Ejecutando');
+            break;
+          case 'Bloqueado':
+            resumen.bloqueados++;
+            resumen.total++;
+            Logger.log('    ✅ Contado como: Bloqueado');
+            break;
+          case 'OK':
+            resumen.ok++;
+            resumen.total++;
+            Logger.log('    ✅ Contado como: OK');
+            break;
+          case 'No_OK':
+            resumen.noOk++;
+            resumen.total++;
+            Logger.log('    ✅ Contado como: No_OK');
+            break;
+          case 'Descartado':
+            resumen.descartados++;
+            Logger.log('    ⏭️ Contado como: Descartado (NO suma al total)');
+            break;
+          default:
+            resumen.sinEjecutar++;
+            resumen.total++;
+            Logger.log('    ⚠️ Estado no reconocido, contado como: Sin ejecutar');
+        }
+        
+        Logger.log('    Resumen parcial - Total: ' + resumen.total + ', OK: ' + resumen.ok);
+      }
+    });
+    
+    Logger.log('\n════════════════════════════════════════════');
+    Logger.log('✅ RESUMEN FINAL:');
+    Logger.log('   Total (sin descartados): ' + resumen.total);
+    Logger.log('   OK: ' + resumen.ok);
+    Logger.log('   No_OK: ' + resumen.noOk);
+    Logger.log('   Bloqueados: ' + resumen.bloqueados);
+    Logger.log('   Sin ejecutar: ' + resumen.sinEjecutar);
+    Logger.log('   Ejecutando: ' + resumen.ejecutando);
+    Logger.log('   Descartados (no contados): ' + resumen.descartado);
+    Logger.log('════════════════════════════════════════════');
+    
+    return {
+      success: true,
+      data: resumen
+    };
+    
+  } catch (error) {
+    Logger.log('════════════════════════════════════════════');
+    Logger.log('❌ ERROR CRÍTICO en obtenerResumenEjecucion');
+    Logger.log('Error: ' + error.toString());
+    Logger.log('Stack: ' + error.stack);
+    Logger.log('════════════════════════════════════════════');
+    return {
+      success: false,
+      mensaje: 'Error al obtener resumen: ' + error.message
+    };
+  }
+}
+/**
+ * NUEVA FUNCIÓN: Sube un archivo de evidencia a Drive
+ */
+function subirEvidenciaADrive(archivo) {
+  try {
+    Logger.log('📤 Subiendo evidencia a Drive: ' + archivo.nombre);
+    
+    // Decodificar base64
+    const contenidoBinario = Utilities.base64Decode(archivo.contenidoBase64);
+    const blob = Utilities.newBlob(contenidoBinario, archivo.mimeType, archivo.nombre);
+    
+    // Obtener o crear carpeta de evidencias
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const carpetaPadre = DriveApp.getFileById(ss.getId()).getParents().next();
+    
+    let carpetaEvidencias;
+    const carpetas = carpetaPadre.getFoldersByName('Evidencias QA');
+    
+    if (carpetas.hasNext()) {
+      carpetaEvidencias = carpetas.next();
+    } else {
+      carpetaEvidencias = carpetaPadre.createFolder('Evidencias QA');
+    }
+    
+    // Subir archivo
+    const archivo = carpetaEvidencias.createFile(blob);
+    const url = archivo.getUrl();
+    
+    Logger.log('✅ Evidencia subida: ' + url);
+    
+    return {
+      success: true,
+      url: url,
+      fileId: archivo.getId()
+    };
+    
+  } catch (error) {
+    Logger.log('❌ Error subiendo evidencia: ' + error.toString());
+    return {
+      success: false,
+      mensaje: 'Error al subir archivo: ' + error.message
+    };
+  }
+}
+
+function testResumenDirecto() {
+  // ⚠️ CAMBIA esta URL por la de TU Sheet
+  const url = "https://docs.google.com/spreadsheets/d/TU_SHEET_ID/edit";
+  
+  const resultado = obtenerResumenEjecucion(url);
+  Logger.log("📊 Resultado:");
+  Logger.log(JSON.stringify(resultado, null, 2));
 }
